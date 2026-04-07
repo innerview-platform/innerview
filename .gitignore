@@ -44,4 +44,5 @@ application.properties
 
 ### VS Code ###
 .vscode/
-.idea/
+.idea/*.xml
+*.example
