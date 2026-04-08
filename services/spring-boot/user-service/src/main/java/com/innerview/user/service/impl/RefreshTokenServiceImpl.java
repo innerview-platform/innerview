@@ -30,7 +30,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     @Transactional
     public RefreshToken createRefreshToken(User user) {
         // Delete any existing refresh token for this user
-        refreshTokenRepository.deleteById(user.getId());
+        refreshTokenRepository.deleteByUser(user);
 
         // Generate new refresh token
         String tokenString = jwtUtil.generateRefreshToken(user.getId());
@@ -47,6 +47,10 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 .build();
 
         return refreshTokenRepository.save(refreshToken);
+    }
+
+    public String createAccessToken(User user) {
+        return jwtUtil.generateAccessToken(user.getId());
     }
 
     public Optional<RefreshToken> findByToken(String token) {
@@ -83,10 +87,8 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     @Transactional
     public void revokeAllUserTokens(User user) {
-        refreshTokenRepository.deleteById(user.getId());
-        log.info("Revoked all refresh tokens for user: {}", user.getId());
+        refreshTokenRepository.deleteByUser(user);
     }
-
     @Transactional
     public int cleanupExpiredAndRevokedTokens() {
         int deletedCount = refreshTokenRepository.deleteExpiredAndRevoked(LocalDateTime.now());

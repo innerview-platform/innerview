@@ -9,6 +9,7 @@ import java.util.Optional;
 
 public interface RefreshTokenService {
     public RefreshToken createRefreshToken(User user);
+    public String createAccessToken(User user);
     public Optional<RefreshToken> findByToken(String token) ;
     public boolean isValidRefreshToken(RefreshToken refreshToken) ;
 

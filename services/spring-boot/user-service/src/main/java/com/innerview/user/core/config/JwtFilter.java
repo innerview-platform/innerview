@@ -25,8 +25,8 @@ import java.util.UUID;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-
 public class JwtFilter extends OncePerRequestFilter {
+
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
 
@@ -37,7 +37,7 @@ public class JwtFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         try {
-            String jwt = extractJwtFromCookie(request);
+            String jwt = extractJwtFromHeader(request);
 
             if (jwt != null && jwtUtil.validateToken(jwt)) {
                 UUID userId = jwtUtil.extractUserId(jwt);
@@ -66,14 +66,17 @@ public class JwtFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    private String extractJwtFromCookie(HttpServletRequest request) {
-        if (request.getCookies() != null) {
-            for (Cookie cookie : request.getCookies()) {
-                if ("access_token".equals(cookie.getName())) {
-                    return cookie.getValue();
-                }
-            }
+    /**
+     * Extract JWT token from Authorization header
+     * Expected format: "Bearer <token>"
+     */
+    private String extractJwtFromHeader(HttpServletRequest request) {
+        String bearerToken = request.getHeader("Authorization");
+
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7); // Remove "Bearer " prefix
         }
+
         return null;
     }
 

@@ -6,6 +6,7 @@ import com.innerview.user.entity.RefreshToken;
 import com.innerview.user.entity.User;
 import com.innerview.user.service.RefreshTokenService;
 import jakarta.transaction.Transactional;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,6 +40,10 @@ public class AuthController {
   @PostMapping("/refresh")
   @Transactional
   public ResponseEntity<RefreshTokenResponse> refreshAccessToken(@RequestBody @Valid RefreshTokenRequest request) {
+    // Add this at the start of /refresh
+    if (request.getRefreshToken() == null || request.getRefreshToken().trim().isEmpty()) {
+      throw new RuntimeException("Invalid Refresh token");
+    }
     RefreshToken token = tokenService.findByToken(request.getRefreshToken())
             .orElseThrow(() -> new RuntimeException("Invalid refresh token"));
     if(!tokenService.isValidRefreshToken(token)){
