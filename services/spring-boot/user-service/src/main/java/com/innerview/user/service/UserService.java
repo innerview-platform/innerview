@@ -1,8 +1,8 @@
 package com.innerview.user.service;
 
-import com.innerview.user.dto.LoginRequest;
-import com.innerview.user.dto.LoginResponse;
+import com.innerview.user.dto.RegisterRequest;
+import com.innerview.user.dto.RegisterResponse;
 
 public interface UserService {
-    LoginResponse login(LoginRequest loginRequest);
+  RegisterResponse createUser(RegisterRequest registerDTO);
 }
