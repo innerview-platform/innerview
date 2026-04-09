@@ -1,5 +1,6 @@
 package com.innerview.user.service.impl;
 
+import com.innerview.user.service.RefreshTokenService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +18,7 @@ import java.util.Optional;
 public class UserServiceImpl implements UserService {
   final UserRepository userRepository;
   final PasswordEncoder passwordEncoder;
+  final RefreshTokenService tokenService;
 
 
   @Override
@@ -36,8 +38,8 @@ public class UserServiceImpl implements UserService {
     //TODO(@moeen): Revoke old refresh tokens for this user
     * Create refresh token and access token for the user and return them in the response.
     */
-    String refreshToken = tokenService.createRefreshToken(user);
-    String accessToken = tokenService.createAccessToken(user.getEmail());
+    String refreshToken = tokenService.createRefreshToken(user).getToken();
+    String accessToken = tokenService.createAccessToken(user);
     return LoginResponse.builder()
             .email(user.getEmail())
             .id(user.getId())
