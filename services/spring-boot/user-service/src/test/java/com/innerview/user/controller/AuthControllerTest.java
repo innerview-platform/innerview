@@ -10,6 +10,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.innerview.user.dto.RegisterRequest;
 import com.innerview.user.dto.RegisterResponse;
+import com.innerview.user.exception.DuplicateEmailException;
+import com.innerview.user.exception.InvalidEmailException;
+import com.innerview.user.exception.PasswordAndConfirmationMisMatchException;
 import com.innerview.user.service.UserService;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -87,5 +90,55 @@ class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidRequest)))
         .andExpect(status().isBadRequest()); // Expects 400 Status from Spring's @Valid
+  }
+
+  @Test
+  void registerUser_shouldReturn409_WhenDuplicateEmailExceptionIsThrown() throws Exception {
+    // Arrange
+    String expectedMessage = "Email already exists: test@example.com";
+    when(userService.createUser(any(RegisterRequest.class)))
+        .thenThrow(new DuplicateEmailException(expectedMessage));
+
+    // Act & Assert
+    mockMvc
+        .perform(
+            post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(validRequest)))
+        .andExpect(status().isConflict()) // 409
+        .andExpect(jsonPath("$.error").value(expectedMessage));
+  }
+
+  @Test
+  void registerUser_shouldReturn400_WhenPasswordMismatchExceptionIsThrown() throws Exception {
+    // Arrange
+    when(userService.createUser(any(RegisterRequest.class)))
+        .thenThrow(new PasswordAndConfirmationMisMatchException());
+
+    // Act & Assert
+    mockMvc
+        .perform(
+            post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(validRequest)))
+        .andExpect(status().isBadRequest()) // 400
+        .andExpect(jsonPath("$.error").value("Password and confirmation don't match"));
+  }
+
+  @Test
+  void registerUser_shouldReturn400_WhenInvalidEmailExceptionIsThrown() throws Exception {
+    // Arrange
+    String expectedMessage = "Invalid Email ";
+    when(userService.createUser(any(RegisterRequest.class)))
+        .thenThrow(new InvalidEmailException(expectedMessage));
+
+    // Act & Assert
+    mockMvc
+        .perform(
+            post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(validRequest)))
+        .andExpect(status().isBadRequest()) // 400
+        .andExpect(jsonPath("$.error").value(expectedMessage));
   }
 }
