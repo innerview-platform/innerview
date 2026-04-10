@@ -85,7 +85,7 @@ public class AuthController {
       * @param refreshTokenString: the string of the refresh token to be revoked
       * @return void
       */
-//      tokenService.revokeRefreshToken(refreshTokenString);
+      tokenService.revokeToken(refreshTokenString);
       return ResponseEntity.ok()
               .body("{\"message\": \"Logged out successfully\"}");
     }catch (Exception ex){
