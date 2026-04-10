@@ -6,7 +6,6 @@ import com.innerview.user.entity.RefreshToken;
 import com.innerview.user.entity.User;
 import com.innerview.user.service.RefreshTokenService;
 import jakarta.transaction.Transactional;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,6 +20,9 @@ import com.innerview.user.dto.LogoutRequest;
 import com.innerview.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Collections;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -63,7 +65,7 @@ public class AuthController {
 
     @PostMapping("/logout")
   public ResponseEntity<?> logout(
-          @AuthenticationPrincipal UserDetails currentUser,
+          @AuthenticationPrincipal User currentUser,
           @RequestBody LogoutRequest logoutRequest) {
 
     if (currentUser == null) {
@@ -92,6 +94,21 @@ public class AuthController {
     }
 
 
+  }
+
+  @PostMapping("/forgot-password")
+  public ResponseEntity<Map<String, String>> forgotPassword(
+          @Valid @RequestBody ResetPasswordRequest request) {
+
+    // This method returns VOID. It handles "User Found" and "User Not Found"
+    // identically.
+    userService.initiatePasswordReset(request.getEmail());
+
+    // Always return the same success message
+    return ResponseEntity.ok(
+            Collections.singletonMap(
+                    "message",
+                    "If an account with this email exists, a password reset link has been sent."));
   }
 
 }
