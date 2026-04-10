@@ -35,7 +35,7 @@ public class User {
     @Column(nullable = false, name = "password_hash")
     private String passwordHash;
 
-    @Column(name = "auth_provider", nullable = false)
+    @Column(name = "auth_provider")
     private String authProvider = "local";
 
     @Column(name = "provider_id")
