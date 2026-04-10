@@ -22,8 +22,6 @@ import com.innerview.user.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-import java.util.UUID;
-
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
