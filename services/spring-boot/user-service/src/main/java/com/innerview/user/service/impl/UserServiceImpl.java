@@ -1,6 +1,7 @@
 package com.innerview.user.service.impl;
 
 import com.innerview.user.core.service.EmailService;
+import com.innerview.user.dto.ResetPasswordRequest;
 import com.innerview.user.service.RefreshTokenService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.Optional;
@@ -107,5 +109,31 @@ public class UserServiceImpl implements UserService {
       throw new RuntimeException("Error hashing token", e);
     }
   }
+  @Override
+  public void resetPassword(ResetPasswordRequest resetPasswordRequest) {
 
+    if (!resetPasswordRequest.getNew_password().equals(resetPasswordRequest.getNew_password_confirm())) {
+      throw new IllegalArgumentException("Passwords do not match.");
+    }
+    if (resetPasswordRequest.getNew_password().length() < 8) {
+      throw new IllegalArgumentException("Password must be at least 8 characters.");
+    }
+    String hashedToken = hashToken(resetPasswordRequest.getToken());
+    // Find user by hashed token
+    Optional<User> optionalUser = userRepository.findByResetPasswordToken(hashedToken);
+    if (optionalUser.isEmpty()) {
+      throw new IllegalArgumentException("Invalid or expired token.");
+    }
+    User user = optionalUser.get();
+    //Check token expiration (1 hour max)
+    LocalDateTime createdAt = user.getResetPasswordTokenCreatedAt();
+    if (createdAt == null || Duration.between(createdAt, LocalDateTime.now()).toMinutes() >= 15) {
+      throw new IllegalArgumentException("Invalid or expired token.");
+    }
+    String newHash = passwordEncoder.encode(resetPasswordRequest.getNew_password());
+    user.setPasswordHash(newHash);
+    user.setResetPasswordToken(null);
+    user.setResetPasswordTokenCreatedAt(null);
+    userRepository.save(user);
+  }
 }

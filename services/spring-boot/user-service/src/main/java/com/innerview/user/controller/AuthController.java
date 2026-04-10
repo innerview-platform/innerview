@@ -8,7 +8,6 @@ import com.innerview.user.service.RefreshTokenService;
 import jakarta.transaction.Transactional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,7 +45,7 @@ public class AuthController {
   @PostMapping("/refresh")
   @Transactional
   public ResponseEntity<RefreshTokenResponse> refreshAccessToken(@RequestBody @Valid RefreshTokenRequest request) {
-    // Add this at the start of /refresh
+
     if (request.getRefreshToken() == null || request.getRefreshToken().trim().isEmpty()) {
       throw new RuntimeException("Invalid Refresh token");
     }
@@ -98,7 +97,7 @@ public class AuthController {
 
   @PostMapping("/forgot-password")
   public ResponseEntity<Map<String, String>> forgotPassword(
-          @Valid @RequestBody ResetPasswordRequest request) {
+          @Valid @RequestBody ForgetPasswordRequest request) {
 
     // This method returns VOID. It handles "User Found" and "User Not Found"
     // identically.
@@ -111,4 +110,17 @@ public class AuthController {
                     "If an account with this email exists, a password reset link has been sent."));
   }
 
+    @PostMapping("/reset-password")
+  public ResponseEntity<?> resetPassword(@RequestBody @Valid ResetPasswordRequest resetPasswordRequest) {
+    try {
+      userService.resetPassword(resetPasswordRequest);
+      return ResponseEntity.ok(
+              Map.of("message", "Password has been reset successfully.")
+      );
+    } catch (IllegalArgumentException ex) {
+      return ResponseEntity.badRequest().body(
+              Map.of("error", ex.getMessage())
+      );
+    }
+  }
 }
