@@ -50,4 +50,15 @@ public class User {
     @Column(name = "updated_at", updatable = false)
     private LocalDateTime updatedAt;
 
+    @Column(name = "reset_password_token", length = 255)
+    private String resetPasswordToken;
+
+
+    @Column(name = "reset_password_token_created_at")
+    private LocalDateTime resetPasswordTokenCreatedAt;
+
+    @Column(name = "forgot_password_count" , nullable = false)
+    private Integer forgotPasswordCount = 0;
+
+
 }
