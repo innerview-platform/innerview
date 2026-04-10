@@ -19,7 +19,7 @@ spring:
               - profile
               - email
             # This matches the URI you set in the Google Cloud Console
-            redirect-uri: "http://localhost:8080/login/oauth2/code/google"
+            redirect-uri: "http://localhost:8081/login/oauth2/code/google"
             authorization-grant-type: authorization_code
 
 # Server configuration
