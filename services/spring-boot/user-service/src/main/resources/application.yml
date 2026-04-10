@@ -3,7 +3,6 @@ spring:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-    driver-class-name: org.postgresql.Driver
     jpa:
       hibernate:
         ddl-auto: update
@@ -20,12 +19,12 @@ spring:
               - profile
               - email
             # This matches the URI you set in the Google Cloud Console
-            redirect-uri: "http://localhost:8080/api/auth/google/callback"
+            redirect-uri: "http://localhost:8080/login/oauth2/code/google"
             authorization-grant-type: authorization_code
 
 # Server configuration
 server:
-  port: 8080
+  port: 8081
   error:
     include-message: always
 

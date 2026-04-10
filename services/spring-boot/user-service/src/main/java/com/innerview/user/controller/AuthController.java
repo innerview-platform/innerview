@@ -1,4 +1,4 @@
-package com.innerview.user.feature.controller;
+package com.innerview.user.controller;
 
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
