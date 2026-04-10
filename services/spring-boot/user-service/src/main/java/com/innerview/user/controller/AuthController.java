@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -100,5 +101,14 @@ public class AuthController {
     } catch (IOException e) {
       throw new RuntimeException("Failed to redirect to Google for authentication", e);
     }
+    ;
+  }
+
+  @GetMapping("/dashboard-test")
+  public String getDashboard(@AuthenticationPrincipal OAuth2User principal) {
+    String name = principal.getAttribute("name");
+    String email = principal.getAttribute("email");
+    String picture = principal.getAttribute("picture");
+    return name + "  " + email + "  " + picture;
   }
 }
