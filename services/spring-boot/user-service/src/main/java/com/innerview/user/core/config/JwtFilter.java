@@ -1,12 +1,9 @@
 package com.innerview.user.core.config;
 
 import com.innerview.user.core.util.JwtUtil;
-import com.innerview.user.entity.User;
-import com.innerview.user.repository.UserRepository;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
@@ -17,7 +14,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.UUID;
@@ -28,7 +24,8 @@ import java.util.UUID;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
+
+    // DELETED: private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(
@@ -40,14 +37,13 @@ public class JwtFilter extends OncePerRequestFilter {
             String jwt = extractJwtFromHeader(request);
 
             if (jwt != null && jwtUtil.validateToken(jwt)) {
-                UUID userId = jwtUtil.extractUserId(jwt);
+                //extract the ID directly from the token payload
+                UUID currentUserId = jwtUtil.extractUserId(jwt);
 
-                User user = userRepository.findById(userId)
-                        .orElseThrow(() -> new RuntimeException("User not found"));
-
+                //Put the UUID directly into the SecurityContext, NO database query!
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
-                                user,
+                                currentUserId, // The Principal is now just the UUID string
                                 null,
                                 Collections.emptyList()
                         );
@@ -55,7 +51,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                log.debug("Successfully authenticated user: {}", userId);
+                log.debug("Stateless authentication successful for user ID: {}", currentUserId);
             }
         } catch (JwtException e) {
             log.error("JWT validation failed: {}", e.getMessage());
@@ -66,18 +62,11 @@ public class JwtFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    /**
-     * Extract JWT token from Authorization header
-     * Expected format: "Bearer <token>"
-     */
     private String extractJwtFromHeader(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
-
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7); // Remove "Bearer " prefix
+            return bearerToken.substring(7);
         }
-
         return null;
     }
-
 }
