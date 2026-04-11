@@ -26,12 +26,21 @@ public class SecurityConfig {
                     .authenticated())
         .oauth2Login(
             oauth2 ->
-                oauth2.successHandler(
-                    (request, response, authentication) -> {
-                      response.sendRedirect("http://localhost:8080/login/oauth2/code/google");
-                    }));
+                oauth2
+                    .successHandler(
+                        (request, response, authentication) -> {
+		           //TODO the logic will be implemented in the next subtask
+
+                          // we should redirect to frontend path mainly homepage
+                          response.sendRedirect("/homepage");
+                        })
+                    .failureHandler(
+                        (request, response, exception) -> {
+                          // we should redirect to frontend path mainly the login page with message
+                          // saying that the authentication failed
+                          response.sendRedirect("/login?error=" + exception.getMessage());
+                        }));
 
     return http.build();
   }
 }
-
