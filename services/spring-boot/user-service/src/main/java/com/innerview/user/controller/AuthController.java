@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -78,37 +80,41 @@ public ResponseEntity<?> loginUser(@RequestBody @Valid LoginRequest loginRequest
     return ResponseEntity.ok(response);
   }
 
-    @PostMapping("/logout")
+  @PostMapping("/logout")
   public ResponseEntity<?> logout(
-          @AuthenticationPrincipal User currentUser,
-          @RequestBody LogoutRequest logoutRequest) {
+          // The principal is now just the UUID, because of our stateless JwtFilter!
+          @AuthenticationPrincipal UUID currentUserId,
+          // Read the token straight from the browser's cookie
+          @CookieValue(name = "refresh_token", required = false) String refreshToken) {
 
-    if (currentUser == null) {
-      return ResponseEntity.status(401)
-              .body(new ErrorMessageResponse("Unauthorized request"));
-    }
+      if (currentUserId == null) {
+          return ResponseEntity.status(401).body(new ErrorMessageResponse("Unauthorized request"));
+      }
 
-    String refreshTokenString = logoutRequest.getRefreshToken();
-    if (refreshTokenString == null || refreshTokenString.isEmpty()) {
-      return ResponseEntity.status(400)
-              .body(new ErrorMessageResponse("refresh_token is required"));
-    }
+      if (refreshToken == null || refreshToken.isEmpty()) {
+          return ResponseEntity.status(400).body(new ErrorMessageResponse("Refresh token cookie is missing"));
+      }
 
-    try{
-      /*
-      * TODO(@moeen): must create a method at revokeRefreshToken(refreshTokenString)
-      * @param refreshTokenString: the string of the refresh token to be revoked
-      * @return void
-      */
-      tokenService.revokeToken(refreshTokenString);
-      return ResponseEntity.ok()
-              .body("{\"message\": \"Logged out successfully\"}");
-    }catch (Exception ex){
-      return ResponseEntity.status(400)
-              .body(ex.getMessage());
-    }
+      try {
+          // Revoke it in your database
+          tokenService.revokeToken(refreshToken);
 
+          // Create a "dead" cookie to force the browser to delete the old one
+          ResponseCookie deleteCookie = ResponseCookie.from("refresh_token", "")
+                  .httpOnly(true)
+                  .secure(false) // Remember to match your login cookie settings
+                  .path("/api/auth")
+                  .maxAge(0) // 0 seconds means "Delete this immediately"
+                  .sameSite("Strict")
+                  .build();
 
+          return ResponseEntity.ok()
+                  .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
+                  .body("{\"message\": \"Logged out successfully\"}");
+
+      } catch (Exception ex) {
+          return ResponseEntity.status(400).body(ex.getMessage());
+      }
   }
 
   @PostMapping("/forgot-password")

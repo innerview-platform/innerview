@@ -38,12 +38,12 @@ public class JwtFilter extends OncePerRequestFilter {
 
             if (jwt != null && jwtUtil.validateToken(jwt)) {
                 //extract the ID directly from the token payload
-                UUID userId = jwtUtil.extractUserId(jwt);
+                UUID currentUserId = jwtUtil.extractUserId(jwt);
 
                 //Put the UUID directly into the SecurityContext, NO database query!
                 UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(
-                                userId, // The Principal is now just the UUID string
+                                currentUserId, // The Principal is now just the UUID string
                                 null,
                                 Collections.emptyList()
                         );
@@ -51,7 +51,7 @@ public class JwtFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                log.debug("Stateless authentication successful for user ID: {}", userId);
+                log.debug("Stateless authentication successful for user ID: {}", currentUserId);
             }
         } catch (JwtException e) {
             log.error("JWT validation failed: {}", e.getMessage());
