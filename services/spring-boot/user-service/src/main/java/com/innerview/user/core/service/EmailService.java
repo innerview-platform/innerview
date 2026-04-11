@@ -4,6 +4,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 
 public interface EmailService {
-    void sendPasswordResetEmail(@NotBlank(message = "Email is required") @Email(message = "Email should be valid") String to,String username, String rawToken);
+	void sendPasswordResetEmail(@NotBlank(message = "Email is required") @Email(message = "Email should be valid") String to, String username, String rawToken);
 }
 

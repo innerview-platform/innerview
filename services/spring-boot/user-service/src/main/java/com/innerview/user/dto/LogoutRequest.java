@@ -5,6 +5,6 @@ import lombok.Data;
 
 @Data
 public class LogoutRequest {
-    @JsonProperty("refresh_token")
-    private String refreshToken;
+	@JsonProperty("refresh_token")
+	private String refreshToken;
 }

@@ -22,70 +22,70 @@ import java.util.UUID;
 public class UserServiceTest {
 
 
-    @Mock
-    private UserRepository userRepository;
+	@Mock
+	private UserRepository userRepository;
 
-     @Mock
-     private PasswordEncoder passwordEncoder;
+	@Mock
+	private PasswordEncoder passwordEncoder;
 
-    // 2. Inject mocks into the REAL object you are testing
-    @InjectMocks
-    private UserServiceImpl userService;
+	// 2. Inject mocks into the REAL object you are testing
+	@InjectMocks
+	private UserServiceImpl userService;
 
-    @Test
-    void login_WithValidCredentials_ReturnsLoginResponse() {
+	@Test
+	void login_WithValidCredentials_ReturnsLoginResponse() {
 
-        LoginRequest request = new LoginRequest("mockail123@gmail.com", "mockPassword123");
-        User mockDatabaseUser = User.builder()
+		LoginRequest request = new LoginRequest("mockail123@gmail.com", "mockPassword123");
+		User mockDatabaseUser = User.builder()
 				.id(UUID.randomUUID())
 				.email(request.getEmail())
 				.build();
 
-        Mockito.when(userRepository.findByEmail(request.getEmail()))
-               .thenReturn(Optional.of(mockDatabaseUser));
+		Mockito.when(userRepository.findByEmail(request.getEmail()))
+				.thenReturn(Optional.of(mockDatabaseUser));
 		Mockito.when(passwordEncoder.matches(request.getPassword(), mockDatabaseUser.getPasswordHash()))
-			   .thenReturn(true);
+				.thenReturn(true);
 
-        LoginResponse response = userService.login(request);
+		LoginResponse response = userService.login(request);
 
-        Assertions.assertNotNull(response);
-        Assertions.assertEquals(request.getEmail(), response.getEmail());
+		Assertions.assertNotNull(response);
+		Assertions.assertEquals(request.getEmail(), response.getEmail());
 
-    }
+	}
 
-    @Test
-    void login_WithInvalidEmail_ThrowsException() {
-        LoginRequest request = new LoginRequest("wrong@gmail.com", "mockPassword123");
+	@Test
+	void login_WithInvalidEmail_ThrowsException() {
+		LoginRequest request = new LoginRequest("wrong@gmail.com", "mockPassword123");
 
-        Mockito.when(userRepository.findByEmail(request.getEmail()))
-               .thenReturn(Optional.empty());
+		Mockito.when(userRepository.findByEmail(request.getEmail()))
+				.thenReturn(Optional.empty());
 		RuntimeException thrown = Assertions.assertThrows(RuntimeException.class, () -> {
-            userService.login(request);
-        });
+			userService.login(request);
+		});
 
-        Assertions.assertEquals("Incorrect email or password", thrown.getMessage());
-    }
+		Assertions.assertEquals("Incorrect email or password", thrown.getMessage());
+	}
 
-    @Test
-    void login_WithInvalidPassword_ThrowsException() {
+	@Test
+	void login_WithInvalidPassword_ThrowsException() {
 
-        LoginRequest request = new LoginRequest("mockail123@gmail.com", "mockPassword123");
-        User mockDatabaseUser = User.builder()
+		LoginRequest request = new LoginRequest("mockail123@gmail.com", "mockPassword123");
+		User mockDatabaseUser = User.builder()
 				.id(UUID.randomUUID())
 				.email(request.getEmail())
 				.build();
 
-        Mockito.when(userRepository.findByEmail(request.getEmail()))
-               .thenReturn(Optional.of(mockDatabaseUser));
+		Mockito.when(userRepository.findByEmail(request.getEmail()))
+				.thenReturn(Optional.of(mockDatabaseUser));
 		Mockito.when(passwordEncoder.matches(request.getPassword(), mockDatabaseUser.getPasswordHash()))
-			   .thenReturn(false);
+				.thenReturn(false);
 
 
 		RuntimeException thrown = Assertions.assertThrows(RuntimeException.class, () -> {
-            userService.login(request);
-        });
+			userService.login(request);
+		});
 
-        Assertions.assertEquals("Incorrect email or password", thrown.getMessage());
+		Assertions.assertEquals("Incorrect email or password", thrown.getMessage());
 
-    }
+	}
 }
