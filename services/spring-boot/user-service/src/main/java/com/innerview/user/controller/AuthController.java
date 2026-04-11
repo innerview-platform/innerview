@@ -4,7 +4,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,10 +25,12 @@ import com.innerview.user.entity.RefreshToken;
 import com.innerview.user.entity.User;
 import com.innerview.user.service.RefreshTokenService;
 import com.innerview.user.service.UserService;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
@@ -154,5 +158,23 @@ public class AuthController {
 			@RequestBody @Valid RegisterRequest registerDTO) {
 		RegisterResponse savedUser = userService.createUser(registerDTO);
 		return ResponseEntity.status(201).body(savedUser);
+	}
+
+	@GetMapping("/google/login")
+	public void googleLoginRedirect(HttpServletResponse response) {
+		try {
+			response.sendRedirect("/oauth2/authorization/google");
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to redirect to Google for authentication", e);
+		}
+		;
+	}
+
+	@GetMapping("/dashboard-test")
+	public String getDashboard(@AuthenticationPrincipal OAuth2User principal) {
+		String name = principal.getAttribute("name");
+		String email = principal.getAttribute("email");
+		String picture = principal.getAttribute("picture");
+		return name + "  " + email + "  " + picture;
 	}
 }
