@@ -6,6 +6,9 @@ import com.innerview.user.entity.RefreshToken;
 import com.innerview.user.entity.User;
 import com.innerview.user.service.RefreshTokenService;
 import jakarta.transaction.Transactional;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,16 +34,29 @@ public class AuthController {
   private final RefreshTokenService tokenService;
   private final JwtUtil jwtUtil;
 
-  @PostMapping("/login")
-  public ResponseEntity<?> loginUser(@RequestBody @Valid LoginRequest loginRequest) {
+@PostMapping("/login")
+public ResponseEntity<?> loginUser(@RequestBody @Valid LoginRequest loginRequest) {
     try {
-      LoginResponse response = userService.login(loginRequest);
-      return ResponseEntity.ok(response);
+        LoginResponse response = userService.login(loginRequest);
+
+        ResponseCookie refreshTokenCookie = ResponseCookie.from("refresh_token", response.getRefreshToken())
+                .httpOnly(true)
+                .secure(false)
+                .path("/api/auth")
+                .maxAge(7 * 24 * 60 * 60)
+                .sameSite("Strict")
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString())
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + response.getAccessToken())
+                .body(response);
+
     } catch (IllegalArgumentException ex) {
-      return ResponseEntity.status(401)
-              .body(new ErrorMessageResponse("Incorrect email or password"));
+        return ResponseEntity.status(401)
+                .body(new ErrorMessageResponse("Incorrect email or password"));
     }
-  }
+}
 
   @PostMapping("/refresh")
   @Transactional
