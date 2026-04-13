@@ -27,7 +27,8 @@ public class GmailEmailService implements EmailService {
 	@Value("${spring.mail.username}")
 	private String senderEmail;
 
-	private final String FRONTEND_URL = "http://innrview.com/reset-password";
+	@Value("${frontend.url}")
+	private String FRONTEND_URL;
 
 	@Override
 	@Async
