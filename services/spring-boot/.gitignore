@@ -1,11 +1,8 @@
-*.sh
-qodana.yaml
 HELP.md
 target/
-.mvn/wrapper/maven-wrapper.jar
+../.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-*.log
 
 ### STS ###
 .apt_generated
@@ -18,12 +15,9 @@ target/
 
 ### IntelliJ IDEA ###
 .idea
-.idea/
 *.iws
 *.iml
 *.ipr
-../.idea
-
 
 ### NetBeans ###
 /nbproject/private/
@@ -35,16 +29,10 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-# Environment
-application.properties
-.env
-
-
-# OS
-.DS_Store
-
 ### VS Code ###
 .vscode/
-.idea/*.xml
-*.example
 
+### configs ###
+src/main/resources/.env
+.env
+*.example
