@@ -37,4 +37,20 @@ public class UserExceptionHandler {
 
 		return ResponseEntity.status(400).body(errorMessageResponse);
 	}
+	@ExceptionHandler(InvalidRefreshTokenException.class)
+	public ResponseEntity<ErrorMessageResponse> invalidRefreshToken(
+			InvalidRefreshTokenException ex) {
+
+		return ResponseEntity
+				.status(401) // 🔥 change to 401
+				.body(new ErrorMessageResponse(ex.getMessage()));
+	}
+	@ExceptionHandler(RefreshTokenExpiredException.class)
+	public ResponseEntity<ErrorMessageResponse> refreshTokenExpired(
+			RefreshTokenExpiredException ex) {
+
+		return ResponseEntity
+				.status(401)
+				.body(new ErrorMessageResponse(ex.getMessage()));
+	}
 }

@@ -1,5 +1,7 @@
 package com.innerview.spring.controller;
 
+import com.innerview.spring.exception.InvalidRefreshTokenException;
+import com.innerview.spring.exception.RefreshTokenExpiredException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -72,12 +74,12 @@ public class AuthController {
 	public ResponseEntity<RefreshTokenResponse> refreshAccessToken(@RequestBody @Valid RefreshTokenRequest request) {
 
 		if (request.getRefreshToken() == null || request.getRefreshToken().trim().isEmpty()) {
-			throw new RuntimeException("Invalid Refresh token");
+			throw new InvalidRefreshTokenException("Refresh token is missing");
 		}
 		RefreshToken token = tokenService.findByToken(request.getRefreshToken())
-				.orElseThrow(() -> new RuntimeException("Invalid refresh token"));
+				.orElseThrow(() -> new InvalidRefreshTokenException("Invalid refresh token"));
 		if (!tokenService.isValidRefreshToken(token)) {
-			throw new RuntimeException("Refresh token expired");
+			throw new RefreshTokenExpiredException("Refresh token expired");
 		}
 		User user = token.getUser();
 		tokenService.revokeToken(request.getRefreshToken());
