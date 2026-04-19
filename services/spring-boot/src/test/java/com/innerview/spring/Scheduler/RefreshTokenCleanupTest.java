@@ -53,6 +53,7 @@ class RefreshTokenCleanupTest {
 				.email("integration1@example.com")
 				.passwordHash("hashedPassword1")
 				.authProvider("local")
+				.forgotPasswordCount(0)
 				.createdAt(LocalDateTime.now())
 				.build();
 
@@ -61,6 +62,7 @@ class RefreshTokenCleanupTest {
 				.email("integration2@example.com")
 				.passwordHash("hashedPassword2")
 				.authProvider("local")
+				.forgotPasswordCount(0)
 				.createdAt(LocalDateTime.now())
 				.build();
 
@@ -224,6 +226,7 @@ class RefreshTokenCleanupTest {
 					.email("user" + i + "@test.com")
 					.passwordHash("hash" + i)
 					.authProvider("local")
+					.forgotPasswordCount(0)
 					.createdAt(LocalDateTime.now())
 					.build();
 			entityManager.persist(user);
