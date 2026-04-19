@@ -1,13 +1,8 @@
 package com.innerview.spring.entity;
 
+import jakarta.persistence.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -16,6 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -48,6 +44,19 @@ public class User {
 
 	@Column(name = "provider_id")
 	private String providerId;
+	@ManyToMany
+	@JoinTable(
+			name = "user_interview",
+			joinColumns = @JoinColumn(name = "user_id"),
+			inverseJoinColumns = @JoinColumn(name = "interview_id"),
+			// 1. This ensures (user_id, interview_id) is the Primary Key (Clustered)
+			uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "interview_id"}),
+			// 2. This creates the Secondary Index you requested
+			indexes = {
+					@Index(name = "idx_interview_lookup", columnList = "interview_id")
+			}
+	)
+	private List<Interview> interviews;
 
 
 	@CreationTimestamp
