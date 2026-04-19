@@ -44,7 +44,7 @@ public class UserServiceTest {
 		User mockDatabaseUser = User.builder()
 				.id(UUID.randomUUID())
 				.email(request.getEmail())
-				.passwordHash("encodedPassword") // ✅ important
+				.passwordHash("encodedPassword")
 				.build();
 
 		RefreshToken mockRefreshToken = RefreshToken.builder()
