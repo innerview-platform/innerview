@@ -46,6 +46,7 @@ public class User {
 	private String providerId;
 	@ManyToMany
 	@JoinTable(
+			//index
 			name = "user_interview",
 			joinColumns = @JoinColumn(name = "user_id"),
 			inverseJoinColumns = @JoinColumn(name = "interview_id"),
