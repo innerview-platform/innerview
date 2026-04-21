@@ -1,11 +1,9 @@
 package com.innerview.spring.mapper;
 
 import com.innerview.spring.dto.CreateProfileRequest;
+import com.innerview.spring.dto.UserProfileResponse;
 import com.innerview.spring.entity.UserProfile;
-import org.mapstruct.Mapper;
-import org.mapstruct.MappingTarget;
-import org.mapstruct.NullValuePropertyMappingStrategy;
-import org.mapstruct.TargetType;
+import org.mapstruct.*;
 
 import java.lang.annotation.Target;
 
@@ -18,4 +16,6 @@ public interface UserProfileMapper {
 
     void update(CreateProfileRequest createProfileRequest, @MappingTarget UserProfile userProfile);
 
+    @Mapping(source = "user.id", target = "userId")
+    UserProfileResponse toResponse(UserProfile userProfile);
 }

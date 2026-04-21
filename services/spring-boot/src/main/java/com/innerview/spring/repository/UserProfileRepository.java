@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 
@@ -16,12 +17,13 @@ import java.util.UUID;
 public interface UserProfileRepository extends JpaRepository<UserProfile,Long> {
 
 
-    @Query(value = "SELECT IFNULL(AVG(rating), 0) as averageRating, COUNT(*) as totalReviews " +
-            "FROM feedback WHERE reviewee_id = :userId", nativeQuery = true)
+    @Query("SELECT COALESCE(AVG(f.rating), 0.0) AS averageRating, COUNT(f) AS totalReviews " +
+            "FROM Feedback f WHERE f.reviewee.id = :userId")
     UserAverageRatingProjection getUserAverageRating(@Param("userId") UUID userId);
 
 
-    UserProfile getUserProfileByUser(User user);
 
-    UserProfile getUserProfileByUser_Id(UUID userId);
+    Optional<UserProfile> getUserProfileByUser(User user);
+
+    Optional<UserProfile> getUserProfileByUser_Id(UUID userId);
 }

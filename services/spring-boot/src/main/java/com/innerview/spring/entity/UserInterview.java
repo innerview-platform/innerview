@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "user_interview")
 @Data
+
 public class UserInterview {
 
     @EmbeddedId
