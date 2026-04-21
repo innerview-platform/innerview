@@ -5,7 +5,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Data
@@ -19,7 +18,7 @@ public class InterviewHistoryDto {
     private String type;
 
     @JsonProperty("start_time")
-    private Instant startTime;
+    private LocalDateTime startTime;
 
     @JsonProperty("duration_minutes")
     private Integer durationMinutes;

@@ -70,23 +70,4 @@ public class UserExceptionHandler {
 		ErrorMessageResponse errorMessageResponse = new ErrorMessageResponse(ex.getMessage());
 		return ResponseEntity.status(404).body(errorMessageResponse);
 	}
-	@ExceptionHandler(LanguageNotFoundException.class)
-	public ResponseEntity<ErrorMessageResponse> handleLanguageNotFound(LanguageNotFoundException ex) {
-		return ResponseEntity.status(404).body(new ErrorMessageResponse(ex.getMessage()));
-	}
-
-	@ExceptionHandler(LanguageAlreadyAssignedException.class)
-	public ResponseEntity<ErrorMessageResponse> handleLanguageAlreadyAssigned(LanguageAlreadyAssignedException ex) {
-		return ResponseEntity.status(409).body(new ErrorMessageResponse(ex.getMessage()));
-	}
-
-	@ExceptionHandler(LanguageNotAssignedToUserException.class)
-	public ResponseEntity<ErrorMessageResponse> handleLanguageNotAssigned(LanguageNotAssignedToUserException ex) {
-		return ResponseEntity.status(404).body(new ErrorMessageResponse(ex.getMessage()));
-	}
-
-	@ExceptionHandler(DuplicateLanguageNameException.class)
-	public ResponseEntity<ErrorMessageResponse> handleDuplicateLanguageName(DuplicateLanguageNameException ex) {
-		return ResponseEntity.status(409).body(new ErrorMessageResponse(ex.getMessage()));
-	}
 }
