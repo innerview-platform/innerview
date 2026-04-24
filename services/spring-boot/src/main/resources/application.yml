@@ -59,4 +59,5 @@ jwt:
     expiration: 604800000
 frontend:
   url: "http://localhost:3000"
-
+interview:
+  duration: 150

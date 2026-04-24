@@ -8,8 +8,6 @@ import java.time.Instant;
 import java.util.UUID;
 @Data
 public class InstantInterviewRequest {
-	UUID creatorUserId;
 	InterviewType interviewType;
 	InterviewRole creatorInterviewRole;
-	Integer durationMinutes;
 }

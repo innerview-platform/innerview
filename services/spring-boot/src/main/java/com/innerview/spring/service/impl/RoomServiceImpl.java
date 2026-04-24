@@ -9,237 +9,245 @@ import com.innerview.spring.entity.RoomUiConfig;
 import com.innerview.spring.enums.InterviewRole;
 import com.innerview.spring.enums.InterviewStatus;
 import com.innerview.spring.enums.InterviewType;
+import com.innerview.spring.exception.ExpiredRoomException;
 import com.innerview.spring.exception.FullRoomException;
 import com.innerview.spring.exception.RoomNotFoundException;
+import com.innerview.spring.exception.RoomNotReadyException;
 import com.innerview.spring.repository.InterviewRepository;
 import com.innerview.spring.service.RoomService;
 import com.innerview.spring.service.SharedCodeEditorService;
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
-
 @RequiredArgsConstructor
 @Service
 public class RoomServiceImpl implements RoomService {
 
-    private final Map<String, ActiveRoom> activeRooms = new ConcurrentHashMap<>();
-    private final SharedCodeEditorService sharedCodeEditorService;
-    private final SimpMessagingTemplate messagingTemplate;
-    private final InterviewRepository interviewRepository;
-//    private final InterviewParticipantRepository participantRepository; // Added for role updates
+  private final Map<String, ActiveRoom> activeRooms = new ConcurrentHashMap<>();
+  private final SharedCodeEditorService sharedCodeEditorService;
+  private final SimpMessagingTemplate messagingTemplate;
+  private final InterviewRepository interviewRepository;
 
-    private static final String CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    private static final int ID_LENGTH = 6;
+  //    private final InterviewParticipantRepository participantRepository; // Added for role
+  // updates
 
-    public static String generateUniqueRoomId() {
-        StringBuilder roomId = new StringBuilder(ID_LENGTH);
-        for (int i = 0; i < ID_LENGTH; i++) {
-            int randomIndex = ThreadLocalRandom.current().nextInt(CHARACTERS.length());
-            roomId.append(CHARACTERS.charAt(randomIndex));
-        }
-        return roomId.toString();
+  // ==========================================
+  // REST API METHODS (Room Initialization)
+  // ==========================================
+
+  @Override
+  public void initRoom(Long interviewId, String roomId, UUID ownerId, InterviewType type) {
+    if (activeRooms.containsKey(roomId)) {
+      throw new IllegalStateException("Room with ID: " + roomId + " already exists");
     }
 
-    // ==========================================
-    // REST API METHODS (Room Initialization)
-    // ==========================================
+    ActiveRoom room = new ActiveRoom();
+    room.setRoomId(roomId);
+    room.setInterviewId(interviewId);
+    room.setOwnerId(ownerId);
 
-    @Override
-    public void initRoom(Long interviewId, String roomId, UUID ownerId, InterviewType type) {
-        if (activeRooms.containsKey(roomId)) {
-            throw new IllegalStateException("Room with ID: " + roomId + " already exists");
-        }
+    // 1. Generate the config based on the exact interview type
+    RoomUiConfig initialConfig = RoomUiConfig.defaultForType(type);
+    room.setUiConfig(initialConfig);
 
-        ActiveRoom room = new ActiveRoom();
-        room.setRoomId(roomId);
-        room.setInterviewId(interviewId);
-        room.setOwnerId(ownerId);
+    room.setCreatedAt(Instant.now());
+    room.setLastActiveAt(Instant.now());
 
-        // 1. Generate the config based on the exact interview type
-        RoomUiConfig initialConfig = RoomUiConfig.defaultForType(type);
-        room.setUiConfig(initialConfig);
+    // 2. PRE-WARM REQUIRED SERVICES
+    // Dynamically spin up the backend engines based on whatever the UI config demands.
 
-        room.setCreatedAt(Instant.now());
-        room.setLastActiveAt(Instant.now());
-
-        // 2. PRE-WARM REQUIRED SERVICES
-        // Dynamically spin up the backend engines based on whatever the UI config demands.
-
-        // Engine A: The Code Editor
-        if (initialConfig.isShowSharedEditor()) {
-//             sharedCodeEditorService.init(roomId);
-        }
-
-        // Engine B: The Shared Canvas (e.g., for System Design)
-        if (initialConfig.isShowSystemCanvas()) {
-            // Uncomment and inject your Canvas service once you build the tldraw integration
-            // sharedCanvasService.init(roomId);
-        }
-
-        // Engine C: The Problem Statement (e.g., Fetching a random algorithm question)
-        if (initialConfig.isShowProblemStatement()) {
-            // If your problem statement requires backend initialization (like picking a question
-            // from a database or loading markdown), trigger it here.
-            // problemManagementService.init(roomId);
-        }
-
-        // 3. Save the fully warmed-up room to RAM
-        activeRooms.put(roomId, room);
+    // Engine A: The Code Editor
+    if (initialConfig.isShowSharedEditor()) {
+      //             sharedCodeEditorService.init(roomId);
     }
 
-    @Override
-    public ActiveRoomDto joinRoom(String roomId, UUID userId) {
-        ActiveRoom room = activeRooms.get(roomId);
-
-        // Fallback: Load from DB if server restarted or room dropped from memory
-        if (room == null) {
-            Interview interview = interviewRepository.getInterviewsByRoomId(roomId);
-            if(interview == null) {
-                throw new RoomNotFoundException("Room with ID: " + roomId + " not found");
-            }
-            initRoom(interview.getId(), roomId, interview.getOwnerId(), interview.getType());
-            interview.setStatus(InterviewStatus.STARTED);
-            interview.setStartTime(LocalDateTime.now());
-            interviewRepository.save(interview);
-            room = activeRooms.get(roomId);
-        }
-
-        // Capacity Check
-        if (room.getParticipants().size() >= room.getMaxParticipants() && !room.getParticipants().containsKey(userId)) {
-            throw new FullRoomException("Room is full");
-        }
-
-        // Preserve ephemeral state (e.g., mute status) on reconnects
-        RoomParticipant roomParticipant = room.getParticipants().getOrDefault(userId, new RoomParticipant());
-
-        // If they were already in the room (role != null), we respect their existing role.
-        if (roomParticipant.getRole() == null) {
-            if (userId.equals(room.getOwnerId())) {
-                roomParticipant.setRole(InterviewRole.INTERVIEWER);
-            } else {
-                roomParticipant.setRole(InterviewRole.INTERVIEWEE);
-            }
-        }
-
-        roomParticipant.setUserId(userId);
-        roomParticipant.setRoomId(roomId);
-        roomParticipant.setJoinedAt(Instant.now());
-
-        room.getParticipants().put(userId, roomParticipant);
-        room.setLastActiveAt(Instant.now());
-
-        return new ActiveRoomDto(
-                room.getRoomId(),
-                room.getUiConfig(),
-                room.getParticipants()
-        );
+    // Engine B: The Shared Canvas (e.g., for System Design)
+    if (initialConfig.isShowSystemCanvas()) {
+      // Uncomment and inject your Canvas service once you build the tldraw integration
+      // sharedCanvasService.init(roomId);
     }
 
-    @Override
-    public void leaveRoom(String roomId, UUID userId) {
-        ActiveRoom room = activeRooms.get(roomId);
-        if (room == null) return;
-
-        RoomParticipant removed = room.getParticipants().remove(userId);
-        if (removed != null) {
-            // Notify remaining participants so the video grid updates
-            messagingTemplate.convertAndSend("/topic/room/" + roomId + "/participants", room.getParticipants().values());
-
-            if (room.getParticipants().isEmpty()) {
-                room.setLastActiveAt(Instant.now()); // Mark for cleanup
-            }
-        }
+    // Engine C: The Problem Statement (e.g., Fetching a random algorithm question)
+    if (initialConfig.isShowProblemStatement()) {
+      // If your problem statement requires backend initialization (like picking a question
+      // from a database or loading markdown), trigger it here.
+      // problemManagementService.init(roomId);
     }
 
-    // ==========================================
-    // STOMP WEBSOCKET METHODS (Live Session)
-    // ==========================================
+    // 3. Save the fully warmed-up room to RAM
+    activeRooms.put(roomId, room);
+  }
 
-    @Override
-    public void handleUserConnectedToSocket(String roomId, UUID userId, String stompSessionId) {
-        ActiveRoom room = activeRooms.get(roomId);
-        if (room != null && room.getParticipants().containsKey(userId)) {
-            // Save STOMP session ID to handle accidental disconnects later
-            room.getParticipants().get(userId).setSessionId(stompSessionId);
+  @Override
+  public ActiveRoomDto joinRoom(String roomId, UUID userId) {
+    ActiveRoom room = activeRooms.get(roomId);
 
-            // Broadcast that the user is fully online and ready for WebRTC
-            messagingTemplate.convertAndSend("/topic/room/" + roomId + "/participants", room.getParticipants().values());
-        }
+    // Fallback: Load from DB if server restarted or room dropped from memory
+    if (room == null) {
+      Interview interview = interviewRepository.getInterviewsByRoomId(roomId);
+      if (interview == null) {
+        throw new RoomNotFoundException("Room with ID: " + roomId + " not found");
+      }
+
+      InterviewStatus interviewStatus = interview.getStatus();
+      if (interviewStatus == InterviewStatus.CANCELLED
+          || interviewStatus == InterviewStatus.COMPLETED
+          || (interviewStatus == InterviewStatus.SCHEDULED
+              && Instant.now().isAfter(interview.getEndTime()))) {
+        throw new ExpiredRoomException("Interview Completed or cancelled");
+      }
+      if (interviewStatus == InterviewStatus.SCHEDULED
+          && Instant.now().isBefore(interview.getStartTime())) {
+        throw new RoomNotReadyException("Interview's schedule time has not begun yet");
+      }
+
+      initRoom(interview.getId(), roomId, interview.getOwnerId(), interview.getType());
+      interview.setStatus(InterviewStatus.STARTED);
+      interviewRepository.save(interview);
+      room = activeRooms.get(roomId);
     }
 
-    @Override
-    public void handleJoinFeature(String roomId, UUID userId, String featureName) {
-        ActiveRoom room = activeRooms.get(roomId);
-        if (room == null) return;
-
-        if ("SHARED_EDITOR".equals(featureName)) {
-            // 1. Initialize room-wide feature if it's currently off
-            if (!room.getUiConfig().isShowSharedEditor()) {
-                room.getUiConfig().setShowSharedEditor(true);
-                sharedCodeEditorService.init(roomId);
-
-                // Silently notify the room that the editor is available
-                messagingTemplate.convertAndSend("/topic/room/" + roomId + "/ui-available", "SHARED_EDITOR");
-            }
-
-            // 2. Add specific user to the session
-            sharedCodeEditorService.addUserToSession(userId, roomId);
-
-            // 3. Send the current code snapshot ONLY to the user who requested it
-            String currentCode = sharedCodeEditorService.getCodeSnapshot(roomId);
-            messagingTemplate.convertAndSendToUser(userId.toString(), "/queue/editor-snapshot", currentCode);
-        }
+    // Capacity Check
+    if (room.getParticipants().size() >= room.getMaxParticipants()
+        && !room.getParticipants().containsKey(userId)) {
+      throw new FullRoomException("Room is full");
     }
 
-    @Override
-    public void changeParticipantRole(String roomId, UUID requesterId, UUID targetUserId, InterviewRole newRole) {
-        ActiveRoom room = activeRooms.get(roomId);
-        if (room == null) throw new RoomNotFoundException("Room not found");
+    // Preserve ephemeral state (e.g., mute status) on reconnects
 
-        // Verify permissions
-        if (!room.getOwnerId().equals(requesterId)) {
-            throw new SecurityException("Only the room owner can change roles.");
-        }
+    RoomParticipant roomParticipant;
+    if (!room.getParticipants().containsKey(userId)) {
+      roomParticipant = new RoomParticipant();
+      roomParticipant.setUserId(userId);
+      roomParticipant.setRoomId(roomId);
+      roomParticipant.setJoinedAt(Instant.now());
+      room.getParticipants().put(userId, roomParticipant);
 
-        RoomParticipant targetParticipant = room.getParticipants().get(targetUserId);
-        if (targetParticipant != null) {
-            // Update RAM
-            targetParticipant.setRole(newRole);
+      if (userId.equals(room.getOwnerId())) {
+        roomParticipant.setRole(InterviewRole.INTERVIEWER);
+      } else {
+        roomParticipant.setRole(InterviewRole.INTERVIEWEE);
+      }
 
-            // Update Database
-//            participantRepository.updateRole(room.getInterviewId(), targetUserId, newRole);
-
-            // Broadcast role change
-            messagingTemplate.convertAndSend("/topic/room/" + roomId + "/roles",
-                    Map.of("userId", targetUserId, "newRole", newRole));
-        }
+    } else {
+      roomParticipant = room.getParticipants().get(userId);
     }
 
-    @Override
-    public void routeWebRtcSignal(String roomId, SignalingMessage message) {
-        // Forward WebRTC Offers, Answers, and ICE Candidates directly to the room
-        messagingTemplate.convertAndSend("/topic/room/" + roomId, message);
+    room.setLastActiveAt(Instant.now());
+    return new ActiveRoomDto(room.getRoomId(), room.getUiConfig(), room.getParticipants());
+  }
+
+  @Override
+  public void leaveRoom(String roomId, UUID userId) {
+    ActiveRoom room = activeRooms.get(roomId);
+    if (room == null) return;
+
+    RoomParticipant removed = room.getParticipants().remove(userId);
+    if (removed != null) {
+      // Notify remaining participants so the video grid updates
+      messagingTemplate.convertAndSend(
+          "/topic/room/" + roomId + "/participants", room.getParticipants().values());
+
+      if (room.getParticipants().isEmpty()) {
+        room.setLastActiveAt(Instant.now()); // Mark for cleanup
+      }
+    }
+  }
+
+  // ==========================================
+  // STOMP WEBSOCKET METHODS (Live Session)
+  // ==========================================
+
+  @Override
+  public void handleUserConnectedToSocket(String roomId, UUID userId, String stompSessionId) {
+    ActiveRoom room = activeRooms.get(roomId);
+    if (room != null && room.getParticipants().containsKey(userId)) {
+      // Save STOMP session ID to handle accidental disconnects later
+      room.getParticipants().get(userId).setSessionId(stompSessionId);
+
+      // Broadcast that the user is fully online and ready for WebRTC
+      messagingTemplate.convertAndSend(
+          "/topic/room/" + roomId + "/participants", room.getParticipants().values());
+    }
+  }
+
+  @Override
+  public void handleJoinFeature(String roomId, UUID userId, String featureName) {
+    ActiveRoom room = activeRooms.get(roomId);
+    if (room == null) return;
+
+    if ("SHARED_EDITOR".equals(featureName)) {
+      // 1. Initialize room-wide feature if it's currently off
+      if (!room.getUiConfig().isShowSharedEditor()) {
+        room.getUiConfig().setShowSharedEditor(true);
+        sharedCodeEditorService.init(roomId);
+
+        // Silently notify the room that the editor is available
+        messagingTemplate.convertAndSend(
+            "/topic/room/" + roomId + "/ui-available", "SHARED_EDITOR");
+      }
+
+      // 2. Add specific user to the session
+      sharedCodeEditorService.addUserToSession(userId, roomId);
+
+      // 3. Send the current code snapshot ONLY to the user who requested it
+      String currentCode = sharedCodeEditorService.getCodeSnapshot(roomId);
+      messagingTemplate.convertAndSendToUser(
+          userId.toString(), "/queue/editor-snapshot", currentCode);
+    }
+  }
+
+  @Override
+  public void changeParticipantRole(
+      String roomId, UUID requesterId, UUID targetUserId, InterviewRole newRole) {
+    ActiveRoom room = activeRooms.get(roomId);
+    if (room == null) throw new RoomNotFoundException("Room not found");
+
+    // Verify permissions
+    if (!room.getOwnerId().equals(requesterId)) {
+      throw new SecurityException("Only the room owner can change roles.");
     }
 
-    // ==========================================
-    // BACKGROUND TASKS
-    // ==========================================
+    RoomParticipant targetParticipant = room.getParticipants().get(targetUserId);
+    if (targetParticipant != null) {
+      // Update RAM
+      targetParticipant.setRole(newRole);
 
-    @Scheduled(fixedDelay = 300000) // Runs every 5 minutes
-    public void cleanupEmptyRooms() {
-        Instant now = Instant.now();
-        // Remove rooms that have been empty for more than 10 minutes
-        activeRooms.entrySet().removeIf(entry ->
-                entry.getValue().getParticipants().isEmpty() &&
-                        entry.getValue().getLastActiveAt().plusSeconds(600).isBefore(now)
-        );
+      // Update Database
+      //            participantRepository.updateRole(room.getInterviewId(), targetUserId, newRole);
+
+      // Broadcast role change
+      messagingTemplate.convertAndSend(
+          "/topic/room/" + roomId + "/roles", Map.of("userId", targetUserId, "newRole", newRole));
     }
+  }
+
+  @Override
+  public void routeWebRtcSignal(String roomId, SignalingMessage message) {
+    // Forward WebRTC Offers, Answers, and ICE Candidates directly to the room
+    messagingTemplate.convertAndSend("/topic/room/" + roomId, message);
+  }
+
+  // ==========================================
+  // BACKGROUND TASKS
+  // ==========================================
+
+  @Scheduled(fixedDelay = 300000) // Runs every 5 minutes
+  public void cleanupEmptyRooms() {
+    Instant now = Instant.now();
+    // Remove rooms that have been empty for more than 10 minutes
+    activeRooms
+        .entrySet()
+        .removeIf(
+            entry ->
+                entry.getValue().getParticipants().isEmpty()
+                    && entry.getValue().getLastActiveAt().plusSeconds(600).isBefore(now));
+  }
 }
+

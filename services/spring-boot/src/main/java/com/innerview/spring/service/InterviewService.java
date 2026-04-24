@@ -4,14 +4,17 @@ import com.innerview.spring.dto.InstantInterviewRequest;
 import com.innerview.spring.dto.InterviewResponse;
 import com.innerview.spring.dto.InterviewSummaryDto;
 import com.innerview.spring.dto.ScheduledInterviewRequest;
-import com.innerview.spring.entity.Interview;
-import org.springframework.stereotype.Service;
-
 import java.util.List;
+import java.util.UUID;
+import org.springframework.stereotype.Service;
 
 @Service
 public interface InterviewService {
-    public List<InterviewSummaryDto> getInterviewHistory(Long userId);
-    public InterviewResponse createInstantInterview(InstantInterviewRequest instantInterviewRequest);
-    public InterviewResponse createScheduledInterview(ScheduledInterviewRequest scheduledInterviewRequest);
+  public List<InterviewSummaryDto> getInterviewHistory(UUID userId);
+
+  public InterviewResponse createInstantInterview(
+      InstantInterviewRequest instantInterviewRequest, UUID currentUserId);
+
+  public InterviewResponse createScheduledInterview(
+      ScheduledInterviewRequest scheduledInterviewRequest, UUID currentUserId);
 }
