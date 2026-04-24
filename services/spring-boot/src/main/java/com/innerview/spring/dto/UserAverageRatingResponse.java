@@ -9,6 +9,7 @@ import java.util.UUID;
 
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class UserAverageRatingResponse {
 
     @JsonProperty("user_id")
