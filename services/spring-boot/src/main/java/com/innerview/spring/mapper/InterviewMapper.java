@@ -22,5 +22,18 @@ public class InterviewMapper {
         interview.getDurationMinutes());
   }
 
-}
+    public Interview toInterview(InstantInterviewRequest request) {
+        if (request == null) {
+            return null;
+        }
 
+        Interview interview = new Interview();
+        interview.setType(request.getInterviewType());
+        interview.setStatus(null); // Status will be set when the interview is created
+        interview.setStartTime(null); // Start time will be set when the interview is scheduled
+        interview.setDurationMinutes(request.getDurationMinutes());
+        // Set other fields as necessary
+
+        return interview;
+    }
+}

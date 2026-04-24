@@ -40,7 +40,7 @@ public class InterviewController {
   public ResponseEntity<?> createScheduledInterview(
       @RequestBody ScheduledInterviewRequest scheduledInterviewRequest,
       @AuthenticationPrincipal UUID currentUserId) {
-	        
+
     InterviewResponse interviewResponse =
         interviewService.createScheduledInterview(scheduledInterviewRequest,currentUserId);
     return ResponseEntity.ok(interviewResponse);

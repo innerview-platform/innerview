@@ -4,9 +4,10 @@ import com.innerview.spring.dto.InstantInterviewRequest;
 import com.innerview.spring.dto.InterviewResponse;
 import com.innerview.spring.dto.InterviewSummaryDto;
 import com.innerview.spring.dto.ScheduledInterviewRequest;
+import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.UUID;
-import org.springframework.stereotype.Service;
 
 @Service
 public interface InterviewService {

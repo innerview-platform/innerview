@@ -22,58 +22,58 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 @EnableWebSocketMessageBroker
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
-  private final JwtUtil jwtUtil;
-  private final RoomService roomService;
+    private final JwtUtil jwtUtil;
+    private final RoomService roomService;
 
-  @Override
-  public void registerStompEndpoints(StompEndpointRegistry registry) {
-    // This is the HTTP endpoint your React frontend will hit to open the WebSocket
-    registry
-        .addEndpoint("/ws-signal")
-        .setAllowedOriginPatterns("*") // Prevents CORS errors from your frontend
-        .withSockJS(); // Optional fallback for older browsers
-  }
+    @Override
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+        // This is the HTTP endpoint your React frontend will hit to open the WebSocket
+        registry
+                .addEndpoint("/ws-signal")
+                .setAllowedOriginPatterns("*") // Prevents CORS errors from your frontend
+                .withSockJS(); // Optional fallback for older browsers
+    }
 
-  @Override
-  public void configureMessageBroker(MessageBrokerRegistry registry) {
-    // This is the prefix for messages the SERVER broadcasts to the frontend (e.g., /topic/room/123)
-    registry.enableSimpleBroker("/topic");
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+        // This is the prefix for messages the SERVER broadcasts to the frontend (e.g., /topic/room/123)
+        registry.enableSimpleBroker("/topic");
 
-    // This is the prefix for messages the FRONTEND sends to the server (e.g., /app/signal.send)
-    registry.setApplicationDestinationPrefixes("/app");
-  }
+        // This is the prefix for messages the FRONTEND sends to the server (e.g., /app/signal.send)
+        registry.setApplicationDestinationPrefixes("/app");
+    }
 
-  @Override
-  public void configureClientInboundChannel(ChannelRegistration registration) {
-    registration.interceptors(
-        new ChannelInterceptor() {
-          @Override
-          public Message<?> preSend(Message<?> message, MessageChannel channel) {
-            StompHeaderAccessor accessor =
-                MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
+    @Override
+    public void configureClientInboundChannel(ChannelRegistration registration) {
+        registration.interceptors(
+                new ChannelInterceptor() {
+                    @Override
+                    public Message<?> preSend(Message<?> message, MessageChannel channel) {
+                        StompHeaderAccessor accessor =
+                                MessageHeaderAccessor.getAccessor(message, StompHeaderAccessor.class);
 
-            if (StompCommand.CONNECT.equals(accessor.getCommand())) {
-              String bearerToken = accessor.getFirstNativeHeader("Authorization");
-              String roomId = accessor.getFirstNativeHeader("roomId");
-              UUID userId = null;
-              // Validating access token and extracting the userId
-              if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-                String jwt = bearerToken.substring(7);
-                if (jwtUtil.validateToken(jwt)) {
-                  userId = jwtUtil.extractUserId(jwt);
-                }
-              }
-              if (userId != null && roomService.hasUserJoinedRoom(roomId, userId)) {
+                        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
+                            String bearerToken = accessor.getFirstNativeHeader("Authorization");
+                            String roomId = accessor.getFirstNativeHeader("roomId");
+                            UUID userId = null;
+                            // Validating access token and extracting the userId
+                            if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+                                String jwt = bearerToken.substring(7);
+                                if (jwtUtil.validateToken(jwt)) {
+                                    userId = jwtUtil.extractUserId(jwt);
+                                }
+                            }
+                            if (userId != null && roomService.hasUserJoinedRoom(roomId, userId)) {
 
-                accessor.setUser(new StompPrincipal(userId, roomId));
-                roomService.mapSessionIdToUser(accessor.getSessionId(), roomId, userId);
-                return message;
-              }
-              throw new MessagingException("unauthorized");
-            }
+                                accessor.setUser(new StompPrincipal(userId, roomId));
+                                roomService.mapSessionIdToUser(accessor.getSessionId(), roomId, userId);
+                                return message;
+                            }
+                            throw new MessagingException("unauthorized");
+                        }
 
-            return message;
-          }
-        });
-  }
+                        return message;
+                    }
+                });
+    }
 }
