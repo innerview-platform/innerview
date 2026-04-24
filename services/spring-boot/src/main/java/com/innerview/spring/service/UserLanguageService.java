@@ -12,6 +12,7 @@ public interface UserLanguageService {
     MessageResponse removeLanguage(UUID userId, UUID languageId);
 
     List<ProgrammingLanguageDto> getUserLanguages(UUID userId);
+    List<ProgrammingLanguageDto> getAllLanguages();
 
     ProgrammingLanguageDto createProgrammingLanguage(CreateProgrammingLanguageRequest request);
 }
