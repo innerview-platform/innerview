@@ -24,8 +24,8 @@ public class InterviewController {
 	}
 
 	@PostMapping("/instant")
-	public ResponseEntity<?> createInstantInterview(@RequestBody InstantInterviewRequest req) {
-		//Logic: Passes the request to interviewService.createInstantInterview(request).
+	public ResponseEntity<?> createInstantInterview(@RequestBody InstantInterviewRequest instantInterviewRequest) {
+		interviewService.createInstantInterview(instantInterviewRequest);
 		return ResponseEntity.ok("Instant interview created");
 	}
 
@@ -34,4 +34,5 @@ public class InterviewController {
 		//Logic: Passes the request to interviewService.createScheduledInterview(request).
 		return ResponseEntity.ok("Scheduled interview created");
 	}
+
 }
