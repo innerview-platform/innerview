@@ -36,3 +36,5 @@ build/
 src/main/resources/.env
 .env
 *.example
+ddl_InterviewParticipant.sql
+ddl_RoomParticipant.sql

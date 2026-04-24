@@ -8,6 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Set of interviews associated with this user.
@@ -39,6 +40,8 @@ public class Interview {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private Integer durationMinutes;
+    private UUID ownerId;
+    private String roomId;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
