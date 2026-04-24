@@ -8,19 +8,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class InterviewMapper {
 
-  /** Converts a full Interview database entity into a lightweight Summary DTO. */
-  public InterviewSummaryDto toSummaryDto(Interview interview) {
-    if (interview == null) {
-      return null;
-    }
+    /** Converts a full Interview database entity into a lightweight Summary DTO. */
+    public InterviewSummaryDto toSummaryDto(Interview interview) {
+        if (interview == null) {
+            return null;
+        }
 
-    return new InterviewSummaryDto(
-        interview.getId(),
-        interview.getType(),
-        interview.getStatus(),
-        interview.getStartTime(),
-        interview.getDurationMinutes());
-  }
+        return new InterviewSummaryDto(
+                interview.getId(),
+                interview.getType(),
+                interview.getStatus(),
+                interview.getStartTime(),
+                interview.getDurationMinutes());
+    }
 
     public Interview toInterview(InstantInterviewRequest request) {
         if (request == null) {

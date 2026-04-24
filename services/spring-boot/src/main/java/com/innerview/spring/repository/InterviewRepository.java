@@ -7,7 +7,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.UUID;
 
 @Repository
 public interface InterviewRepository extends JpaRepository<Interview, Long> {
@@ -16,7 +15,7 @@ public interface InterviewRepository extends JpaRepository<Interview, Long> {
             "JOIN interview_participants p ON i.id = p.interview_id " +
             "WHERE p.user_id = :userId AND i.status = 'COMPLETED'",
             nativeQuery = true)
-    List<Interview> findCompletedInterviewsByUserIdNative(@Param("userId") UUID userId);
+    List<Interview> findCompletedInterviewsByUserIdNative(@Param("userId") Long userId);
 
     Interview getInterviewsByRoomId(String roomId);
 }
