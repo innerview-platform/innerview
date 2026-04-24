@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -37,8 +38,8 @@ public class Interview {
     @ManyToMany(mappedBy = "interviews")
     private List<User> participants;
 
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
+    private Instant startTime;
+    private Instant endTime;
     private Integer durationMinutes;
     private UUID ownerId;
     private String roomId;

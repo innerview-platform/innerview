@@ -8,9 +8,7 @@ import java.time.Instant;
 import java.util.UUID;
 @Data
 public class ScheduledInterviewRequest {
-	UUID creatorUserId;
 	InterviewType interviewType;
 	InterviewRole creatorInterviewRole;
 	Instant startTime;
-	Integer durationMinutes;
 }
