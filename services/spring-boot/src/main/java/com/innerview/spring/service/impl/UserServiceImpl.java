@@ -43,7 +43,7 @@ public class UserServiceImpl implements UserService {
 		if (!registerDTO.getPassword().equals(registerDTO.getPasswordConfirmation())) {
 			throw new PasswordAndConfirmationMisMatchException();
 		}
-		// check if the email host server is valie
+		// check if the email host server is valid
 		if (!emailExitanceService.isEmailReal(registerDTO.getEmail())) {
 			throw new InvalidEmailException("Invalid Email ");
 		}
@@ -59,6 +59,7 @@ public class UserServiceImpl implements UserService {
 						.email(registerDTO.getEmail().trim().toLowerCase())
 						.name(registerDTO.getName().trim())
 						.passwordHash(passwordEncoder.encode(registerDTO.getPassword()))
+						.forgotPasswordCount(0)
 						.build();
 
 		User savedUser = userRepository.save(user);

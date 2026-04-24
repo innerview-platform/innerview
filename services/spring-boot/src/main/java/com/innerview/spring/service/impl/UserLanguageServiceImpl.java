@@ -80,4 +80,13 @@ public class UserLanguageServiceImpl implements UserLanguageService {
 
         return programmingLanguageMapper.toDto(saved);
     }
+
+    @Override
+    @Transactional
+    public List<ProgrammingLanguageDto> getAllLanguages(){
+        List<ProgrammingLanguage>languages=programmingLanguageRepository.findAll();
+        return languages.stream()
+                .map(programmingLanguageMapper::toDto)
+                .toList();
+    }
 }
