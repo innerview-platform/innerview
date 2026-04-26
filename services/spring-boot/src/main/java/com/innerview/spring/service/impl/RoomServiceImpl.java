@@ -134,9 +134,10 @@ public class RoomServiceImpl implements RoomService {
       } else {
         roomParticipant.setRole(InterviewRole.INTERVIEWEE);
       }
-
+      room.getParticipants().put(roomParticipant.getUserId(), roomParticipant);
     } else {
       roomParticipant = room.getParticipants().get(userId);
+       
     }
 
     room.setLastActiveAt(Instant.now());
@@ -158,6 +159,14 @@ public class RoomServiceImpl implements RoomService {
         room.setLastActiveAt(Instant.now()); // Mark for cleanup
       }
     }
+  }
+
+  @Override
+  public boolean hasUserJoinedRoom(String roomId, UUID userId) {
+    ActiveRoom room = activeRooms.get(roomId);
+    if (room == null) return false;
+    if (room.getParticipants().get(userId) == null) return false;
+    return true;
   }
 
   // ==========================================
@@ -250,4 +259,3 @@ public class RoomServiceImpl implements RoomService {
                     && entry.getValue().getLastActiveAt().plusSeconds(600).isBefore(now));
   }
 }
-
