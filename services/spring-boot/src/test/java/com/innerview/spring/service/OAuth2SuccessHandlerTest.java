@@ -16,6 +16,7 @@ import com.innerview.spring.entity.RefreshToken;
 import com.innerview.spring.entity.User;
 import com.innerview.spring.repository.UserRepository;
 import jakarta.servlet.http.Cookie;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.util.Optional;
@@ -61,7 +62,7 @@ class OAuth2SuccessHandlerTest {
 	void setUp() {
 		request = new MockHttpServletRequest();
 		response = new MockHttpServletResponse();
-
+		ReflectionTestUtils.setField(successHandler, "frontendUrl", "/api/auth");
 		// Mock the OAuth2User attributes
 		when(authentication.getPrincipal()).thenReturn(oAuth2User);
 		when(oAuth2User.getAttribute("email")).thenReturn(email);
@@ -155,7 +156,7 @@ class OAuth2SuccessHandlerTest {
 
 	private void assertCookiesAndRedirect() {
 		// 1. Verify Redirect URL
-		assertEquals("/api/auth/dashboard-test", response.getRedirectedUrl());
+		assertEquals("/api/auth/dashboard", response.getRedirectedUrl());
 
 		// 2. Verify Cookies
 		Cookie[] cookies = response.getCookies();

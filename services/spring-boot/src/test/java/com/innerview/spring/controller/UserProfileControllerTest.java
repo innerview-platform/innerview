@@ -29,6 +29,7 @@ import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.method.support.ModelAndViewContainer;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -226,7 +227,7 @@ public class UserProfileControllerTest {
     @Test
     void getUserInterviews_ShouldReturnUserInterviews() throws Exception {
         UUID targetUserId = UUID.randomUUID();
-        InterviewHistoryDto interview = new InterviewHistoryDto(1L, "MOCK", LocalDateTime.now(), 60, "INTERVIEWER");
+        InterviewHistoryDto interview = new InterviewHistoryDto(1L, "MOCK", Instant.now(), 60, "INTERVIEWER");
 
         // FIX: Add PageRequest.of() and total elements
         Page<InterviewHistoryDto> page = new PageImpl<>(List.of(interview), PageRequest.of(0, 10), 1);
