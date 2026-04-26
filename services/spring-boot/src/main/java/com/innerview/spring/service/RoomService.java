@@ -21,8 +21,12 @@ public interface RoomService {
 
   void handleJoinFeature(String roomId, UUID userId, String featureName);
 
+  void mapSessionIdToUser(String sessionId, String roomId, UUID userId);
+
   void changeParticipantRole(
       String roomId, UUID requesterId, UUID targetUserId, InterviewRole newRole);
 
   void routeWebRtcSignal(String roomId, SignalingMessage message);
+
+  boolean hasUserJoinedRoom(String roomId, UUID userId);
 }
