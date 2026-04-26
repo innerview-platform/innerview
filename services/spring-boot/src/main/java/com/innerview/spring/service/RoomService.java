@@ -4,24 +4,29 @@ import com.innerview.spring.dto.ActiveRoomDto;
 import com.innerview.spring.dto.SignalingMessage;
 import com.innerview.spring.enums.InterviewRole;
 import com.innerview.spring.enums.InterviewType;
-import org.springframework.stereotype.Service;
-
 import java.util.UUID;
-
+import org.springframework.stereotype.Service;
 
 @Service
 public interface RoomService {
-    void initRoom(Long interviewId, String roomId, UUID ownerId, InterviewType type);
+  void initRoom(Long interviewId, String roomId, UUID ownerId, InterviewType type);
 
-    ActiveRoomDto joinRoom(String roomId, UUID userId);
+  ActiveRoomDto joinRoom(String roomId, UUID userId);
 
-    void leaveRoom(String roomId, UUID userId);
+  void leaveRoom(String roomId, UUID userId);
 
-    void handleUserConnectedToSocket(String roomId, UUID userId, String stompSessionId);
+  void handleDisconnect(String sessionId);
 
-    void handleJoinFeature(String roomId, UUID userId, String featureName);
+  void handleUserConnectedToSocket(String roomId, UUID userId, String stompSessionId);
 
-    void changeParticipantRole(String roomId, UUID requesterId, UUID targetUserId, InterviewRole newRole);
+  void handleJoinFeature(String roomId, UUID userId, String featureName);
 
-    void routeWebRtcSignal(String roomId, SignalingMessage message);
+  void mapSessionIdToUser(String sessionId, String roomId, UUID userId);
+
+  void changeParticipantRole(
+      String roomId, UUID requesterId, UUID targetUserId, InterviewRole newRole);
+
+  void routeWebRtcSignal(String roomId, SignalingMessage message);
+
+  boolean hasUserJoinedRoom(String roomId, UUID userId);
 }
