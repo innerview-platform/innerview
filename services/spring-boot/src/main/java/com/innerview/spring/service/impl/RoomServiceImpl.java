@@ -9,6 +9,7 @@ import com.innerview.spring.entity.RoomUiConfig;
 import com.innerview.spring.enums.InterviewRole;
 import com.innerview.spring.enums.InterviewStatus;
 import com.innerview.spring.enums.InterviewType;
+import com.innerview.spring.enums.RoomParticipantStatus;
 import com.innerview.spring.exception.ExpiredRoomException;
 import com.innerview.spring.exception.FullRoomException;
 import com.innerview.spring.exception.RoomNotFoundException;
@@ -17,6 +18,7 @@ import com.innerview.spring.repository.InterviewRepository;
 import com.innerview.spring.service.RoomService;
 import com.innerview.spring.service.SharedCodeEditorService;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,6 +32,7 @@ import org.springframework.stereotype.Service;
 public class RoomServiceImpl implements RoomService {
 
   private final Map<String, ActiveRoom> activeRooms = new ConcurrentHashMap<>();
+  private final Map<String, RoomParticipant> sessionDict = new ConcurrentHashMap<>();
   private final SharedCodeEditorService sharedCodeEditorService;
   private final SimpMessagingTemplate messagingTemplate;
   private final InterviewRepository interviewRepository;
@@ -40,6 +43,12 @@ public class RoomServiceImpl implements RoomService {
   // ==========================================
   // REST API METHODS (Room Initialization)
   // ==========================================
+  @Override
+  public void mapSessionIdToUser(String sessionId, String roomId, UUID userId) {
+    RoomParticipant joindUser = activeRooms.get(roomId).getParticipants().get(userId);
+    joindUser.setSessionId(sessionId);
+    sessionDict.putIfAbsent(sessionId, joindUser);
+  }
 
   @Override
   public void initRoom(Long interviewId, String roomId, UUID ownerId, InterviewType type) {
@@ -127,8 +136,7 @@ public class RoomServiceImpl implements RoomService {
       roomParticipant.setUserId(userId);
       roomParticipant.setRoomId(roomId);
       roomParticipant.setJoinedAt(Instant.now());
-      room.getParticipants().put(userId, roomParticipant);
-
+      roomParticipant.setStatus(RoomParticipantStatus.CONNECTED);
       if (userId.equals(room.getOwnerId())) {
         roomParticipant.setRole(InterviewRole.INTERVIEWER);
       } else {
@@ -136,8 +144,8 @@ public class RoomServiceImpl implements RoomService {
       }
       room.getParticipants().put(roomParticipant.getUserId(), roomParticipant);
     } else {
+      room.getParticipants().get(userId).setStatus(RoomParticipantStatus.CONNECTED);
       roomParticipant = room.getParticipants().get(userId);
-       
     }
 
     room.setLastActiveAt(Instant.now());
@@ -151,9 +159,14 @@ public class RoomServiceImpl implements RoomService {
 
     RoomParticipant removed = room.getParticipants().remove(userId);
     if (removed != null) {
+
+      String sessionId = removed.getSessionId();
+      sessionDict.remove(sessionId);
       // Notify remaining participants so the video grid updates
-      messagingTemplate.convertAndSend(
-          "/topic/room/" + roomId + "/participants", room.getParticipants().values());
+      Map<String, Object> connectionIssuePayload = new HashMap<>();
+      connectionIssuePayload.put("type", "USER_DISCONNECTED");
+      connectionIssuePayload.put("userId", userId.toString());
+      messagingTemplate.convertAndSend("/topic/room/" + roomId, connectionIssuePayload);
 
       if (room.getParticipants().isEmpty()) {
         room.setLastActiveAt(Instant.now()); // Mark for cleanup
@@ -162,6 +175,23 @@ public class RoomServiceImpl implements RoomService {
   }
 
   @Override
+  public void handleDisconnect(String sessionId) {
+    RoomParticipant disconnectedClient = sessionDict.get(sessionId);
+    if (disconnectedClient == null) return;
+    String roomId = disconnectedClient.getRoomId();
+    UUID userId = disconnectedClient.getUserId();
+    // preparing the message
+    Map<String, Object> connectionIssuePayload = new HashMap<>();
+    connectionIssuePayload.put("type", "USER_DISCONNECTED");
+    connectionIssuePayload.put("userId", userId.toString());
+    messagingTemplate.convertAndSend("/topic/room/" + roomId, connectionIssuePayload);
+    activeRooms
+        .get(roomId)
+        .getParticipants()
+        .get(userId)
+        .setStatus(RoomParticipantStatus.DISCONNECTED);
+  }
+
   public boolean hasUserJoinedRoom(String roomId, UUID userId) {
     ActiveRoom room = activeRooms.get(roomId);
     if (room == null) return false;

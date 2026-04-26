@@ -66,6 +66,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
               if (userId != null && roomService.hasUserJoinedRoom(roomId, userId)) {
 
                 accessor.setUser(new StompPrincipal(userId, roomId));
+                roomService.mapSessionIdToUser(accessor.getSessionId(), roomId, userId);
                 return message;
               }
               throw new MessagingException("unauthorized");

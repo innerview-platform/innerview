@@ -15,9 +15,13 @@ public interface RoomService {
 
   void leaveRoom(String roomId, UUID userId);
 
+  void handleDisconnect(String sessionId);
+
   void handleUserConnectedToSocket(String roomId, UUID userId, String stompSessionId);
 
   void handleJoinFeature(String roomId, UUID userId, String featureName);
+
+  void mapSessionIdToUser(String sessionId, String roomId, UUID userId);
 
   void changeParticipantRole(
       String roomId, UUID requesterId, UUID targetUserId, InterviewRole newRole);
