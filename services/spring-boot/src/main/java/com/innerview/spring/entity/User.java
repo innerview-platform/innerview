@@ -60,6 +60,20 @@ public class User {
 	private List<Interview> interviews;
 
 
+	@ManyToMany
+	@JoinTable(
+			name = "user_interview",
+			joinColumns = @JoinColumn(name = "user_id"),
+			inverseJoinColumns = @JoinColumn(name = "interview_id"),
+			// 1. This ensures (user_id, interview_id) is the Primary Key (Clustered)
+			uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "interview_id"}),
+			// 2. This creates the Secondary Index you requested
+			indexes = {
+					@Index(name = "idx_interview_lookup", columnList = "interview_id")
+			}
+	)
+	private List<Interview> interviews;
+
 	@CreationTimestamp
 	@Column(name = "created_at", updatable = false)
 	private LocalDateTime createdAt;

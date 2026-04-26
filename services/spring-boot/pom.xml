@@ -152,7 +152,6 @@
             <optional>true</optional>
             <version>${lombok.version}</version>
             <scope>provided</scope>
-            <optional>true</optional>
         </dependency>
 
         <!-- Test -->
