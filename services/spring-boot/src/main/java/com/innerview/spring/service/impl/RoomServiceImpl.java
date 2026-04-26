@@ -1,6 +1,7 @@
 package com.innerview.spring.service.impl;
 
 import com.innerview.spring.dto.ActiveRoomDto;
+import com.innerview.spring.dto.CodeUpdatePayload;
 import com.innerview.spring.dto.SignalingMessage;
 import com.innerview.spring.entity.ActiveRoom;
 import com.innerview.spring.entity.Interview;
@@ -21,6 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
+import org.aspectj.apache.bcel.classfile.Code;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -64,7 +66,7 @@ public class RoomServiceImpl implements RoomService {
 
     // Engine A: The Code Editor
     if (initialConfig.isShowSharedEditor()) {
-      //             sharedCodeEditorService.init(roomId);
+      sharedCodeEditorService.init(roomId);
     }
 
     // Engine B: The Shared Canvas (e.g., for System Design)
@@ -151,6 +153,9 @@ public class RoomServiceImpl implements RoomService {
     RoomParticipant removed = room.getParticipants().remove(userId);
     if (removed != null) {
       // Notify remaining participants so the video grid updates
+      if (room.getUiConfig().isShowSharedEditor()) {
+        sharedCodeEditorService.removeUserFromSession(userId, roomId);
+      }
       messagingTemplate.convertAndSend(
           "/topic/room/" + roomId + "/participants", room.getParticipants().values());
 
@@ -197,9 +202,11 @@ public class RoomServiceImpl implements RoomService {
       sharedCodeEditorService.addUserToSession(userId, roomId);
 
       // 3. Send the current code snapshot ONLY to the user who requested it
-      String currentCode = sharedCodeEditorService.getCodeSnapshot(roomId);
-      messagingTemplate.convertAndSendToUser(
-          userId.toString(), "/queue/editor-snapshot", currentCode);
+      CodeUpdatePayload currentCode = sharedCodeEditorService.getCodeSnapshot(roomId);
+//      messagingTemplate.convertAndSendToUser(
+//          userId.toString(), "/queue/editor-snapshot", currentCode);
+      messagingTemplate.convertAndSend(
+              "/topic/room/" + roomId + "/code", currentCode);
     }
   }
 
