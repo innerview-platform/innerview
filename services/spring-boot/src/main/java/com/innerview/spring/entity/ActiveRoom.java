@@ -1,9 +1,9 @@
 package com.innerview.spring.entity;
 
+import lombok.Data;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import lombok.Data;
 
 @Data
 public class ActiveRoom {

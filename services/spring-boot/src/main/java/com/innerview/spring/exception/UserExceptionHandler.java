@@ -53,4 +53,21 @@ public class UserExceptionHandler {
 				.status(401)
 				.body(new ErrorMessageResponse(ex.getMessage()));
 	}
+	@ExceptionHandler(UserHasProfile.class)
+	public ResponseEntity<ErrorMessageResponse> handleUserHasProfile(UserHasProfile ex) {
+		ErrorMessageResponse errorMessageResponse = new ErrorMessageResponse(ex.getMessage());
+		return ResponseEntity.status(409).body(errorMessageResponse);
+	}
+
+	@ExceptionHandler(UserProfileNotFound.class)
+	public ResponseEntity<ErrorMessageResponse> handleUserProfileNotFound(UserProfileNotFound ex) {
+		ErrorMessageResponse errorMessageResponse = new ErrorMessageResponse(ex.getMessage());
+		return ResponseEntity.status(404).body(errorMessageResponse);
+	}
+
+	@ExceptionHandler(UserNotFound.class)
+	public ResponseEntity<ErrorMessageResponse> handleUserNotFound(UserNotFound ex) {
+		ErrorMessageResponse errorMessageResponse = new ErrorMessageResponse(ex.getMessage());
+		return ResponseEntity.status(404).body(errorMessageResponse);
+	}
 }

@@ -4,8 +4,11 @@ import com.innerview.spring.dto.ActiveRoomDto;
 import com.innerview.spring.dto.SignalingMessage;
 import com.innerview.spring.enums.InterviewRole;
 import com.innerview.spring.enums.InterviewType;
+import org.springframework.stereotype.Service;
+
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+
 
 @Service
 public interface RoomService {

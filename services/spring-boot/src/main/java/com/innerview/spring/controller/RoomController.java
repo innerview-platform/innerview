@@ -16,32 +16,32 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class RoomController {
 
-  private final RoomService roomService;
+    private final RoomService roomService;
 
-  /**
-   * Called by the frontend via standard HTTP POST right BEFORE opening the WebSocket. Validates the
-   * user, initializes the room if necessary, and returns the current state.
-   */
-  @PostMapping("/{roomId}/join")
-  public ResponseEntity<?> joinRoom(
-      @PathVariable String roomId, @AuthenticationPrincipal UUID currentUserId) {
+    /**
+     * Called by the frontend via standard HTTP POST right BEFORE opening the WebSocket. Validates the
+     * user, initializes the room if necessary, and returns the current state.
+     */
+    @PostMapping("/{roomId}/join")
+    public ResponseEntity<?> joinRoom(
+            @PathVariable String roomId, @AuthenticationPrincipal UUID currentUserId) {
 
-    // The service handles DB checks, capacity checks, and RAM allocation
-    ActiveRoomDto roomState = roomService.joinRoom(roomId, currentUserId);
-    return ResponseEntity.ok().body(roomState);
-  }
+        // The service handles DB checks, capacity checks, and RAM allocation
+        ActiveRoomDto roomState = roomService.joinRoom(roomId, currentUserId);
+        return ResponseEntity.ok().body(roomState);
+    }
 
-  /**
-   * Optional endpoint for graceful HTTP-based exits. Useful if the frontend wants to trigger a
-   * leave event before tearing down the STOMP client.
-   */
-  @PostMapping("/{roomId}/leave")
-  public ResponseEntity<Void> leaveRoom(
-      @PathVariable String roomId, @AuthenticationPrincipal UUID currentUserId) {
+    /**
+     * Optional endpoint for graceful HTTP-based exits. Useful if the frontend wants to trigger a
+     * leave event before tearing down the STOMP client.
+     */
+    @PostMapping("/{roomId}/leave")
+    public ResponseEntity<Void> leaveRoom(
+            @PathVariable String roomId, @AuthenticationPrincipal UUID currentUserId) {
 
-    roomService.leaveRoom(roomId, currentUserId);
+        roomService.leaveRoom(roomId, currentUserId);
 
-    return ResponseEntity.ok().build();
-  }
+        return ResponseEntity.ok().build();
+    }
 }
 
