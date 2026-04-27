@@ -10,11 +10,11 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface InterviewService {
-  public List<InterviewSummaryDto> getInterviewHistory(UUID userId);
+    public List<InterviewSummaryDto> getInterviewHistory(UUID userId);
 
-  public InterviewResponse createInstantInterview(
-      InstantInterviewRequest instantInterviewRequest, UUID currentUserId);
+    public InterviewResponse createInstantInterview(
+            InstantInterviewRequest instantInterviewRequest, UUID currentUserId);
 
-  public InterviewResponse createScheduledInterview(
-      ScheduledInterviewRequest scheduledInterviewRequest, UUID currentUserId);
+    public InterviewResponse createScheduledInterview(
+            ScheduledInterviewRequest scheduledInterviewRequest, UUID currentUserId);
 }

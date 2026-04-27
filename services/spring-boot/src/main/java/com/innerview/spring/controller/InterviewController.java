@@ -19,30 +19,30 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/interviews")
 @RequiredArgsConstructor
 public class InterviewController {
-  private final InterviewService interviewService;
+    private final InterviewService interviewService;
 
-  @GetMapping("/user/{userId}/history")
-  public ResponseEntity<?> getUserInterviewHistory(@PathVariable UUID userId) {
-    interviewService.getInterviewHistory(userId);
-    return ResponseEntity.ok("User interview history");
-  }
+    @GetMapping("/user/{userId}/history")
+    public ResponseEntity<?> getUserInterviewHistory(@PathVariable UUID userId) {
+        interviewService.getInterviewHistory(userId);
+        return ResponseEntity.ok("User interview history");
+    }
 
-  @PostMapping("/instant")
-  public ResponseEntity<?> createInstantInterview(
-      @RequestBody InstantInterviewRequest instantInterviewRequest,
-      @AuthenticationPrincipal UUID currentUserId) {
-    InterviewResponse InterviewResponse =
-        interviewService.createInstantInterview(instantInterviewRequest, currentUserId);
-    return ResponseEntity.ok(InterviewResponse);
-  }
+    @PostMapping("/instant")
+    public ResponseEntity<?> createInstantInterview(
+            @RequestBody InstantInterviewRequest instantInterviewRequest,
+            @AuthenticationPrincipal UUID currentUserId) {
+        InterviewResponse InterviewResponse =
+                interviewService.createInstantInterview(instantInterviewRequest, currentUserId);
+        return ResponseEntity.ok(InterviewResponse);
+    }
 
-  @PostMapping("/scheduled")
-  public ResponseEntity<?> createScheduledInterview(
-      @RequestBody ScheduledInterviewRequest scheduledInterviewRequest,
-      @AuthenticationPrincipal UUID currentUserId) {
-	        
-    InterviewResponse interviewResponse =
-        interviewService.createScheduledInterview(scheduledInterviewRequest,currentUserId);
-    return ResponseEntity.ok(interviewResponse);
-  }
+    @PostMapping("/scheduled")
+    public ResponseEntity<?> createScheduledInterview(
+            @RequestBody ScheduledInterviewRequest scheduledInterviewRequest,
+            @AuthenticationPrincipal UUID currentUserId) {
+
+        InterviewResponse interviewResponse =
+                interviewService.createScheduledInterview(scheduledInterviewRequest,currentUserId);
+        return ResponseEntity.ok(interviewResponse);
+    }
 }
