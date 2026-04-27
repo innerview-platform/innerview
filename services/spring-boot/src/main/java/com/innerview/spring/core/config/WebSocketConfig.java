@@ -5,6 +5,7 @@ import com.innerview.spring.service.RoomService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessagingException;
@@ -20,10 +21,13 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 @EnableWebSocketMessageBroker
-@RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     private final JwtUtil jwtUtil;
     private final RoomService roomService;
+    WebSocketConfig(JwtUtil jwtUtil,@Lazy RoomService roomService){
+        this.jwtUtil = jwtUtil;
+        this.roomService = roomService;
+    }
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
