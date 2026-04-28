@@ -1,6 +1,7 @@
 package com.innerview.spring.service.impl;
 
 import com.innerview.spring.dto.ActiveRoomDto;
+import com.innerview.spring.dto.CodeUpdatePayload;
 import com.innerview.spring.dto.SignalingMessage;
 import com.innerview.spring.entity.ActiveRoom;
 import com.innerview.spring.entity.Interview;
@@ -71,10 +72,10 @@ public class RoomServiceImpl implements RoomService {
         // 2. PRE-WARM REQUIRED SERVICES
         // Dynamically spin up the backend engines based on whatever the UI config demands.
 
-        // Engine A: The Code Editor
-        if (initialConfig.isShowSharedEditor()) {
-            //             sharedCodeEditorService.init(roomId);
-        }
+    // Engine A: The Code Editor
+    if (initialConfig.isShowSharedEditor()) {
+      sharedCodeEditorService.init(roomId);
+    }
 
         // Engine B: The Shared Canvas (e.g., for System Design)
         if (initialConfig.isShowSystemCanvas()) {
@@ -163,6 +164,9 @@ public class RoomServiceImpl implements RoomService {
             String sessionId = removed.getSessionId();
             sessionDict.remove(sessionId);
             // Notify remaining participants so the video grid updates
+            if (room.getUiConfig().isShowSharedEditor()) {
+                sharedCodeEditorService.removeUserFromSession(userId, roomId);
+            }
             Map<String, Object> connectionIssuePayload = new HashMap<>();
             connectionIssuePayload.put("type", "USER_DISCONNECTED");
             connectionIssuePayload.put("userId", userId.toString());
@@ -235,12 +239,14 @@ public class RoomServiceImpl implements RoomService {
             // 2. Add specific user to the session
             sharedCodeEditorService.addUserToSession(userId, roomId);
 
-            // 3. Send the current code snapshot ONLY to the user who requested it
-            String currentCode = sharedCodeEditorService.getCodeSnapshot(roomId);
-            messagingTemplate.convertAndSendToUser(
-                    userId.toString(), "/queue/editor-snapshot", currentCode);
-        }
+      // 3. Send the current code snapshot ONLY to the user who requested it
+      CodeUpdatePayload currentCode = sharedCodeEditorService.getCodeSnapshot(roomId);
+//      messagingTemplate.convertAndSendToUser(
+//          userId.toString(), "/queue/editor-snapshot", currentCode);
+      messagingTemplate.convertAndSend(
+              "/topic/room/" + roomId + "/code", currentCode);
     }
+  }
 
     @Override
     public void changeParticipantRole(
@@ -289,3 +295,4 @@ public class RoomServiceImpl implements RoomService {
                                         && entry.getValue().getLastActiveAt().plusSeconds(600).isBefore(now));
     }
 }
+

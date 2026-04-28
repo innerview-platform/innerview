@@ -29,10 +29,22 @@ spring:
     password: ${MAIL_PASSWORD}
     properties:
       mail:
-        smtp:
+        SMTP:
           auth: true
-          starttls:
+          STARTTLS:
             enable: true
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 500ms
+
+      lettuce:
+        pool:
+          max-active: 200
+          max-idle: 50
+          min-idle: 10
+          max-wait: 100ms
 
 # Server configuration
 server:

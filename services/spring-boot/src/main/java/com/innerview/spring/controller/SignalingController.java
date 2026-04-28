@@ -1,5 +1,7 @@
 package com.innerview.spring.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.innerview.spring.dto.CodeUpdatePayload;
 import com.innerview.spring.core.config.StompPrincipal;
 import com.innerview.spring.dto.SignalingMessage;
 import com.innerview.spring.enums.InterviewRole;
@@ -20,6 +22,7 @@ public class SignalingController {
 
     private final RoomService roomService;
     private final SharedCodeEditorService sharedCodeEditorService; // 1. Inject the code service
+    private final ObjectMapper objectMapper;
 
     /** Catches ALL real-time WebSocket messages sent to /app/signal.send */
     @MessageMapping("/signal.send")
@@ -62,15 +65,16 @@ public class SignalingController {
                 break;
 
             case "CODE_UPDATE":
-                // 2. Handle the live code synchronization
-                // Payload e.g.: {"code": "public class Main { ... }"}
-                @SuppressWarnings("unchecked")
-                Map<String, Object> codePayload = (Map<String, Object>) message.getPayload();
-                String newCode = (String) codePayload.get("code");
+                // 1. Let Jackson automatically parse the raw JSON payload into our exact Record
+                CodeUpdatePayload codeUpdatePayload = objectMapper.convertValue(message.getPayload(), CodeUpdatePayload.class);
 
-                sharedCodeEditorService.updateCode(roomId, newCode);
+                // 2. Pass the strongly-typed payload directly to the service
+                sharedCodeEditorService.updateCode(roomId, codeUpdatePayload);
                 break;
-
+            case "COMPILE_CODE":
+                CodeUpdatePayload payload = objectMapper.convertValue(message.getPayload(), CodeUpdatePayload.class);
+                sharedCodeEditorService.compileCode(roomId,payload);
+                //CALL METHOD IN SHAREDEDITOR TO FIRE AND COMPILE
             case "OFFER":
             case "ANSWER":
             case "ICE_CANDIDATE":

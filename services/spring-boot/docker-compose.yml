@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  # 1. The Redis Engine
+  redis:
+    image: redis:7.2-alpine
+    container_name: innerview-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis-data:/data
+
+  # 2. The Graphical User Interface
+  redis-gui:
+    image: redis/redisinsight:latest
+    container_name: innerview-redis-gui
+    ports:
+      - "8001:5540"
+    depends_on:
+      - redis
+
+volumes:
+  redis-data:
