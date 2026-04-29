@@ -1,9 +1,10 @@
 package com.innerview.spring.entity;
 
-import lombok.Data;
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import lombok.Data;
 
 @Data
 public class ActiveRoom {
@@ -15,4 +16,17 @@ public class ActiveRoom {
   private ConcurrentHashMap<UUID, RoomParticipant> participants = new ConcurrentHashMap<>();
   private Instant createdAt;
   private Instant lastActiveAt;
+  private AtomicInteger activeParticipants = new AtomicInteger(0);
+
+  public void incrementActiveParticipants() {
+    activeParticipants.incrementAndGet();
+  }
+
+  public void decrementActiveParticipants() {
+    activeParticipants.decrementAndGet();
+  }
+
+  public int getActiveParticipants() {
+    return activeParticipants.get();
+  }
 }

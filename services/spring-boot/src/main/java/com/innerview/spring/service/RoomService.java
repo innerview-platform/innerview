@@ -1,7 +1,6 @@
 package com.innerview.spring.service;
 
 import com.innerview.spring.dto.ActiveRoomDto;
-import com.innerview.spring.dto.SignalingMessage;
 import com.innerview.spring.enums.InterviewRole;
 import com.innerview.spring.enums.InterviewType;
 import org.springframework.stereotype.Service;
@@ -28,8 +27,6 @@ public interface RoomService {
 
   void changeParticipantRole(
       String roomId, UUID requesterId, UUID targetUserId, InterviewRole newRole);
-
-  void routeWebRtcSignal(String roomId, SignalingMessage message);
 
   boolean hasUserJoinedRoom(String roomId, UUID userId);
 }
