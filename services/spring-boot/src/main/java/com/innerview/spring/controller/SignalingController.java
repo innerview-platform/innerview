@@ -74,7 +74,6 @@ public class SignalingController {
             case "COMPILE_CODE":
                 CodeUpdatePayload payload = objectMapper.convertValue(message.getPayload(), CodeUpdatePayload.class);
                 sharedCodeEditorService.compileCode(roomId,payload);
-                //CALL METHOD IN SHAREDEDITOR TO FIRE AND COMPILE
             case "OFFER":
             case "ANSWER":
             case "ICE_CANDIDATE":
