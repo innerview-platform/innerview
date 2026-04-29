@@ -3,8 +3,8 @@ package com.innerview.spring.core.config;
 import com.innerview.spring.core.util.JwtUtil;
 import com.innerview.spring.service.RoomService;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.MessageChannel;
 import org.springframework.messaging.MessagingException;
@@ -20,10 +20,14 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 @Configuration
 @EnableWebSocketMessageBroker
-@RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
   private final JwtUtil jwtUtil;
   private final RoomService roomService;
+
+  public WebSocketConfig(JwtUtil jwtUtil,@Lazy RoomService roomService) {
+    this.jwtUtil = jwtUtil;
+    this.roomService = roomService;
+  }
 
   @Override
   public void registerStompEndpoints(StompEndpointRegistry registry) {
@@ -55,6 +59,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
             if (StompCommand.CONNECT.equals(accessor.getCommand())) {
               String bearerToken = accessor.getFirstNativeHeader("Authorization");
               String roomId = accessor.getFirstNativeHeader("roomId");
+
               UUID userId = null;
               // Validating access token and extracting the userId
               if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
@@ -63,8 +68,8 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
                   userId = jwtUtil.extractUserId(jwt);
                 }
               }
-              if (userId != null && roomService.hasUserJoinedRoom(roomId, userId)) {
-
+              if (userId != null) {
+                roomService.joinRoom(roomId, userId);
                 accessor.setUser(new StompPrincipal(userId, roomId));
                 roomService.mapSessionIdToUser(accessor.getSessionId(), roomId, userId);
                 return message;

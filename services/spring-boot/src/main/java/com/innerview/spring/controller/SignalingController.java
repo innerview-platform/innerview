@@ -5,6 +5,7 @@ import com.innerview.spring.dto.SignalingMessage;
 import com.innerview.spring.enums.InterviewRole;
 import com.innerview.spring.service.RoomService;
 import com.innerview.spring.service.SharedCodeEditorService;
+import com.innerview.spring.service.WebRtcService;
 import java.security.Principal;
 import java.util.Map;
 import java.util.UUID;
@@ -20,6 +21,7 @@ public class SignalingController {
 
   private final RoomService roomService;
   private final SharedCodeEditorService sharedCodeEditorService; // 1. Inject the code service
+  private final WebRtcService webRtcService;
 
   /** Catches ALL real-time WebSocket messages sent to /app/signal.send */
   @MessageMapping("/signal.send")
@@ -36,7 +38,7 @@ public class SignalingController {
     // Extract the underlying WebSocket TCP Session ID
     String sessionId = headerAccessor.getSessionId();
     // check of the user joined room before sending messages via stomp
-
+    System.out.println(type);
     switch (type) {
       case "JOIN":
         roomService.handleUserConnectedToSocket(roomId, senderId, sessionId);
@@ -74,9 +76,7 @@ public class SignalingController {
       case "OFFER":
       case "ANSWER":
       case "ICE_CANDIDATE":
-      case "LEAVE":
-        // Route WebRTC peer-to-peer data directly to the room topic
-        roomService.routeWebRtcSignal(roomId, message);
+        webRtcService.handleSignal(roomId, message);
         break;
 
       default:

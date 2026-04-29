@@ -2,6 +2,7 @@ package com.innerview.spring.service.impl;
 
 import com.innerview.spring.dto.ActiveRoomDto;
 import com.innerview.spring.dto.SignalingMessage;
+import com.innerview.spring.dto.UserDisconnectedEvent;
 import com.innerview.spring.entity.ActiveRoom;
 import com.innerview.spring.entity.Interview;
 import com.innerview.spring.entity.RoomParticipant;
@@ -17,18 +18,20 @@ import com.innerview.spring.exception.RoomNotReadyException;
 import com.innerview.spring.repository.InterviewRepository;
 import com.innerview.spring.service.RoomService;
 import com.innerview.spring.service.SharedCodeEditorService;
+import com.innerview.spring.service.WebRtcService;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-@RequiredArgsConstructor
 @Service
+@RequiredArgsConstructor
 public class RoomServiceImpl implements RoomService {
 
   private final Map<String, ActiveRoom> activeRooms = new ConcurrentHashMap<>();
@@ -36,13 +39,20 @@ public class RoomServiceImpl implements RoomService {
   private final SharedCodeEditorService sharedCodeEditorService;
   private final SimpMessagingTemplate messagingTemplate;
   private final InterviewRepository interviewRepository;
+  private final WebRtcService webRtcService;
 
-  //    private final InterviewParticipantRepository participantRepository; // Added for role
+  // private final InterviewParticipantRepository participantRepository; // Added
+  // for role
   // updates
 
   // ==========================================
   // REST API METHODS (Room Initialization)
   // ==========================================
+  @EventListener
+  public void onUserDisconnected(UserDisconnectedEvent userDisconnectedEvent) {
+    handleDisconnect(userDisconnectedEvent.sessionId());
+  }
+
   @Override
   public void mapSessionIdToUser(String sessionId, String roomId, UUID userId) {
     RoomParticipant joindUser = activeRooms.get(roomId).getParticipants().get(userId);
@@ -69,22 +79,25 @@ public class RoomServiceImpl implements RoomService {
     room.setLastActiveAt(Instant.now());
 
     // 2. PRE-WARM REQUIRED SERVICES
-    // Dynamically spin up the backend engines based on whatever the UI config demands.
+    // Dynamically spin up the backend engines based on whatever the UI config
+    // demands.
 
     // Engine A: The Code Editor
     if (initialConfig.isShowSharedEditor()) {
-      //             sharedCodeEditorService.init(roomId);
+      // sharedCodeEditorService.init(roomId);
     }
 
     // Engine B: The Shared Canvas (e.g., for System Design)
     if (initialConfig.isShowSystemCanvas()) {
-      // Uncomment and inject your Canvas service once you build the tldraw integration
+      // Uncomment and inject your Canvas service once you build the tldraw
+      // integration
       // sharedCanvasService.init(roomId);
     }
 
     // Engine C: The Problem Statement (e.g., Fetching a random algorithm question)
     if (initialConfig.isShowProblemStatement()) {
-      // If your problem statement requires backend initialization (like picking a question
+      // If your problem statement requires backend initialization (like picking a
+      // question
       // from a database or loading markdown), trigger it here.
       // problemManagementService.init(roomId);
     }
@@ -121,7 +134,6 @@ public class RoomServiceImpl implements RoomService {
       interviewRepository.save(interview);
       room = activeRooms.get(roomId);
     }
-
     // Capacity Check
     if (room.getParticipants().size() >= room.getMaxParticipants()
         && !room.getParticipants().containsKey(userId)) {
@@ -167,7 +179,7 @@ public class RoomServiceImpl implements RoomService {
       connectionIssuePayload.put("type", "USER_DISCONNECTED");
       connectionIssuePayload.put("userId", userId.toString());
       messagingTemplate.convertAndSend("/topic/room/" + roomId, connectionIssuePayload);
-
+      room.decrementActiveParticipants();
       if (room.getParticipants().isEmpty()) {
         room.setLastActiveAt(Instant.now()); // Mark for cleanup
       }
@@ -180,9 +192,11 @@ public class RoomServiceImpl implements RoomService {
     if (disconnectedClient == null) return;
     String roomId = disconnectedClient.getRoomId();
     UUID userId = disconnectedClient.getUserId();
+    System.out.println(userId + "disconnected");
     // preparing the message
     Map<String, Object> connectionIssuePayload = new HashMap<>();
-    connectionIssuePayload.put("type", "USER_DISCONNECTED");
+    SignalingMessage signalingMessage = new SignalingMessage();
+    signalingMessage.setType("USER_DISCONNECTED");
     connectionIssuePayload.put("userId", userId.toString());
     messagingTemplate.convertAndSend("/topic/room/" + roomId, connectionIssuePayload);
     activeRooms
@@ -190,6 +204,7 @@ public class RoomServiceImpl implements RoomService {
         .getParticipants()
         .get(userId)
         .setStatus(RoomParticipantStatus.DISCONNECTED);
+    activeRooms.get(roomId).decrementActiveParticipants();
   }
 
   public boolean hasUserJoinedRoom(String roomId, UUID userId) {
@@ -209,10 +224,8 @@ public class RoomServiceImpl implements RoomService {
     if (room != null && room.getParticipants().containsKey(userId)) {
       // Save STOMP session ID to handle accidental disconnects later
       room.getParticipants().get(userId).setSessionId(stompSessionId);
-
-      // Broadcast that the user is fully online and ready for WebRTC
-      messagingTemplate.convertAndSend(
-          "/topic/room/" + roomId + "/participants", room.getParticipants().values());
+      room.incrementActiveParticipants();
+      webRtcService.join(room, userId);
     }
   }
 
@@ -259,7 +272,8 @@ public class RoomServiceImpl implements RoomService {
       targetParticipant.setRole(newRole);
 
       // Update Database
-      //            participantRepository.updateRole(room.getInterviewId(), targetUserId, newRole);
+      // participantRepository.updateRole(room.getInterviewId(), targetUserId,
+      // newRole);
 
       // Broadcast role change
       messagingTemplate.convertAndSend(
@@ -267,11 +281,6 @@ public class RoomServiceImpl implements RoomService {
     }
   }
 
-  @Override
-  public void routeWebRtcSignal(String roomId, SignalingMessage message) {
-    // Forward WebRTC Offers, Answers, and ICE Candidates directly to the room
-    messagingTemplate.convertAndSend("/topic/room/" + roomId, message);
-  }
 
   // ==========================================
   // BACKGROUND TASKS
