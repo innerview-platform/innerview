@@ -26,45 +26,45 @@ public class SignalingController {
     private final ObjectMapper objectMapper;
     private final WebRtcService webRtcService;
 
-    /** Catches ALL real-time WebSocket messages sent to /app/signal.send */
-    @MessageMapping("/signal.send")
-    public void handleRoomSignals(
-            @Payload SignalingMessage message,
-            SimpMessageHeaderAccessor headerAccessor,
-            Principal principal) {
+  /** Catches ALL real-time WebSocket messages sent to /app/signal.send */
+  @MessageMapping("/signal.send")
+  public void handleRoomSignals(
+      @Payload SignalingMessage message,
+      SimpMessageHeaderAccessor headerAccessor,
+      Principal principal) {
 
-        String type = message.getType();
-        // casting so we can use the method getUserId() and getRoomId()
-        StompPrincipal stompPrincipal = (StompPrincipal) principal;
-        UUID senderId = stompPrincipal.getUserId();
-        String roomId = stompPrincipal.getRoomId();
-        // Extract the underlying WebSocket TCP Session ID
-        String sessionId = headerAccessor.getSessionId();
-        // check of the user joined room before sending messages via stomp
+    String type = message.getType();
+    // casting so we can use the method getUserId() and getRoomId()
+    StompPrincipal stompPrincipal = (StompPrincipal) principal;
+    UUID senderId = stompPrincipal.getUserId();
+    String roomId = stompPrincipal.getRoomId();
+    // Extract the underlying WebSocket TCP Session ID
+    String sessionId = headerAccessor.getSessionId();
+    // check of the user joined room before sending messages via stomp
 
-        switch (type) {
-            case "JOIN":
-                roomService.handleUserConnectedToSocket(roomId, senderId, sessionId);
-                break;
+    switch (type) {
+      case "JOIN":
+        roomService.handleUserConnectedToSocket(roomId, senderId, sessionId);
+        break;
 
-            case "JOIN_FEATURE":
-                // Payload e.g.: {"element": "SHARED_EDITOR"}
-                @SuppressWarnings("unchecked")
-                Map<String, Object> featurePayload = (Map<String, Object>) message.getPayload();
-                String featureName = (String) featurePayload.get("element");
+      case "JOIN_FEATURE":
+        // Payload e.g.: {"element": "SHARED_EDITOR"}
+        @SuppressWarnings("unchecked")
+        Map<String, Object> featurePayload = (Map<String, Object>) message.getPayload();
+        String featureName = (String) featurePayload.get("element");
 
-                roomService.handleJoinFeature(roomId, senderId, featureName);
-                break;
+        roomService.handleJoinFeature(roomId, senderId, featureName);
+        break;
 
-            case "ROLE_UPDATE":
-                // Payload e.g.: {"targetUserId": "...", "newRole": "INTERVIEWER"}
-                @SuppressWarnings("unchecked")
-                Map<String, Object> rolePayload = (Map<String, Object>) message.getPayload();
-                UUID targetId = UUID.fromString((String) rolePayload.get("targetUserId"));
-                InterviewRole newRole = InterviewRole.valueOf((String) rolePayload.get("newRole"));
+      case "ROLE_UPDATE":
+        // Payload e.g.: {"targetUserId": "...", "newRole": "INTERVIEWER"}
+        @SuppressWarnings("unchecked")
+        Map<String, Object> rolePayload = (Map<String, Object>) message.getPayload();
+        UUID targetId = UUID.fromString((String) rolePayload.get("targetUserId"));
+        InterviewRole newRole = InterviewRole.valueOf((String) rolePayload.get("newRole"));
 
-                roomService.changeParticipantRole(roomId, senderId, targetId, newRole);
-                break;
+        roomService.changeParticipantRole(roomId, senderId, targetId, newRole);
+        break;
 
             case "CODE_UPDATE":
                 // 1. Let Jackson automatically parse the raw JSON payload into our exact Record

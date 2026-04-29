@@ -2,9 +2,7 @@ package com.innerview.spring.service.impl;
 
 import com.innerview.spring.dto.ActiveRoomDto;
 import com.innerview.spring.dto.CodeUpdatePayload;
-import com.innerview.spring.dto.CodeUpdatePayload;
 import com.innerview.spring.dto.SignalingMessage;
-import com.innerview.spring.dto.UserDisconnectedEvent;
 import com.innerview.spring.entity.ActiveRoom;
 import com.innerview.spring.entity.Interview;
 import com.innerview.spring.entity.RoomParticipant;
@@ -20,7 +18,6 @@ import com.innerview.spring.exception.RoomNotReadyException;
 import com.innerview.spring.repository.InterviewRepository;
 import com.innerview.spring.service.RoomService;
 import com.innerview.spring.service.SharedCodeEditorService;
-import com.innerview.spring.service.WebRtcService;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -85,22 +82,20 @@ public class RoomServiceImpl implements RoomService {
 
     // Engine B: The Shared Canvas (e.g., for System Design)
     if (initialConfig.isShowSystemCanvas()) {
-      // Uncomment and inject your Canvas service once you build the tldraw
-      // integration
+      // Uncomment and inject your Canvas service once you build the tldraw integration
       // sharedCanvasService.init(roomId);
     }
 
     // Engine C: The Problem Statement (e.g., Fetching a random algorithm question)
     if (initialConfig.isShowProblemStatement()) {
-      // If your problem statement requires backend initialization (like picking a
-      // question
+      // If your problem statement requires backend initialization (like picking a question
       // from a database or loading markdown), trigger it here.
       // problemManagementService.init(roomId);
     }
 
-        // 3. Save the fully warmed-up room to RAM
-        activeRooms.put(roomId, room);
-    }
+    // 3. Save the fully warmed-up room to RAM
+    activeRooms.put(roomId, room);
+  }
 
     @Override
     public ActiveRoomDto joinRoom(String roomId, UUID userId) {
@@ -125,19 +120,19 @@ public class RoomServiceImpl implements RoomService {
                 throw new RoomNotReadyException("Interview's schedule time has not begun yet");
             }
 
-            initRoom(interview.getId(), roomId, interview.getOwnerId(), interview.getType());
-            interview.setStatus(InterviewStatus.STARTED);
-            interviewRepository.save(interview);
-            room = activeRooms.get(roomId);
-        }
+      initRoom(interview.getId(), roomId, interview.getOwnerId(), interview.getType());
+      interview.setStatus(InterviewStatus.STARTED);
+      interviewRepository.save(interview);
+      room = activeRooms.get(roomId);
+    }
 
-        // Capacity Check
-        if (room.getParticipants().size() >= room.getMaxParticipants()
-                && !room.getParticipants().containsKey(userId)) {
-            throw new FullRoomException("Room is full");
-        }
+    // Capacity Check
+    if (room.getParticipants().size() >= room.getMaxParticipants()
+        && !room.getParticipants().containsKey(userId)) {
+      throw new FullRoomException("Room is full");
+    }
 
-        // Preserve ephemeral state (e.g., mute status) on reconnects
+    // Preserve ephemeral state (e.g., mute status) on reconnects
 
         RoomParticipant roomParticipant;
         if (!room.getParticipants().containsKey(userId)) {
@@ -193,7 +188,6 @@ public class RoomServiceImpl implements RoomService {
     if (disconnectedClient == null) return;
     String roomId = disconnectedClient.getRoomId();
     UUID userId = disconnectedClient.getUserId();
-//    System.out.println(userId + "disconnected");
     // preparing the message
     Map<String, Object> connectionIssuePayload = new HashMap<>();
     SignalingMessage signalingMessage = new SignalingMessage();
@@ -208,16 +202,16 @@ public class RoomServiceImpl implements RoomService {
     activeRooms.get(roomId).decrementActiveParticipants();
   }
 
-    public boolean hasUserJoinedRoom(String roomId, UUID userId) {
-        ActiveRoom room = activeRooms.get(roomId);
-        if (room == null) return false;
-        if (room.getParticipants().get(userId) == null) return false;
-        return true;
-    }
+  public boolean hasUserJoinedRoom(String roomId, UUID userId) {
+    ActiveRoom room = activeRooms.get(roomId);
+    if (room == null) return false;
+    if (room.getParticipants().get(userId) == null) return false;
+    return true;
+  }
 
-    // ==========================================
-    // STOMP WEBSOCKET METHODS (Live Session)
-    // ==========================================
+  // ==========================================
+  // STOMP WEBSOCKET METHODS (Live Session)
+  // ==========================================
 
   @Override
   public void handleUserConnectedToSocket(String roomId, UUID userId, String stompSessionId) {
@@ -258,45 +252,45 @@ public class RoomServiceImpl implements RoomService {
     }
   }
 
-    @Override
-    public void changeParticipantRole(
-            String roomId, UUID requesterId, UUID targetUserId, InterviewRole newRole) {
-        ActiveRoom room = activeRooms.get(roomId);
-        if (room == null) throw new RoomNotFoundException("Room not found");
+  @Override
+  public void changeParticipantRole(
+      String roomId, UUID requesterId, UUID targetUserId, InterviewRole newRole) {
+    ActiveRoom room = activeRooms.get(roomId);
+    if (room == null) throw new RoomNotFoundException("Room not found");
 
-        // Verify permissions
-        if (!room.getOwnerId().equals(requesterId)) {
-            throw new SecurityException("Only the room owner can change roles.");
-        }
-
-        RoomParticipant targetParticipant = room.getParticipants().get(targetUserId);
-        if (targetParticipant != null) {
-            // Update RAM
-            targetParticipant.setRole(newRole);
-
-            // Update Database
-            //            participantRepository.updateRole(room.getInterviewId(), targetUserId, newRole);
-
-            // Broadcast role change
-            messagingTemplate.convertAndSend(
-                    "/topic/room/" + roomId + "/roles", Map.of("userId", targetUserId, "newRole", newRole));
-        }
+    // Verify permissions
+    if (!room.getOwnerId().equals(requesterId)) {
+      throw new SecurityException("Only the room owner can change roles.");
     }
+
+    RoomParticipant targetParticipant = room.getParticipants().get(targetUserId);
+    if (targetParticipant != null) {
+      // Update RAM
+      targetParticipant.setRole(newRole);
+
+      // Update Database
+      //            participantRepository.updateRole(room.getInterviewId(), targetUserId, newRole);
+
+      // Broadcast role change
+      messagingTemplate.convertAndSend(
+          "/topic/room/" + roomId + "/roles", Map.of("userId", targetUserId, "newRole", newRole));
+    }
+  }
 
 
   // ==========================================
   // BACKGROUND TASKS
   // ==========================================
 
-    @Scheduled(fixedDelay = 300000) // Runs every 5 minutes
-    public void cleanupEmptyRooms() {
-        Instant now = Instant.now();
-        // Remove rooms that have been empty for more than 10 minutes
-        activeRooms
-                .entrySet()
-                .removeIf(
-                        entry ->
-                                entry.getValue().getParticipants().isEmpty()
-                                        && entry.getValue().getLastActiveAt().plusSeconds(600).isBefore(now));
-    }
+  @Scheduled(fixedDelay = 300000) // Runs every 5 minutes
+  public void cleanupEmptyRooms() {
+    Instant now = Instant.now();
+    // Remove rooms that have been empty for more than 10 minutes
+    activeRooms
+        .entrySet()
+        .removeIf(
+            entry ->
+                entry.getValue().getParticipants().isEmpty()
+                    && entry.getValue().getLastActiveAt().plusSeconds(600).isBefore(now));
+  }
 }
