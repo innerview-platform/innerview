@@ -2,29 +2,29 @@ package com.innerview.spring.service.impl;
 
 import com.innerview.spring.dto.ActiveRoomDto;
 import com.innerview.spring.dto.CodeUpdatePayload;
+import com.innerview.spring.dto.SfuAccessTokenDto;
 import com.innerview.spring.dto.SignalingMessage;
-import com.innerview.spring.entity.ActiveRoom;
-import com.innerview.spring.entity.Interview;
-import com.innerview.spring.entity.RoomParticipant;
-import com.innerview.spring.entity.RoomUiConfig;
+import com.innerview.spring.entity.*;
 import com.innerview.spring.enums.InterviewRole;
 import com.innerview.spring.enums.InterviewStatus;
 import com.innerview.spring.enums.InterviewType;
 import com.innerview.spring.enums.RoomParticipantStatus;
-import com.innerview.spring.exception.ExpiredRoomException;
-import com.innerview.spring.exception.FullRoomException;
-import com.innerview.spring.exception.RoomNotFoundException;
-import com.innerview.spring.exception.RoomNotReadyException;
+import com.innerview.spring.exception.*;
 import com.innerview.spring.repository.InterviewRepository;
+import com.innerview.spring.repository.UserRepository;
 import com.innerview.spring.service.RoomService;
 import com.innerview.spring.service.SharedCodeEditorService;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.innerview.spring.service.WebRtcService;
+import io.livekit.server.AccessToken;
+import io.livekit.server.RoomJoin;
+import io.livekit.server.RoomName;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -40,8 +40,6 @@ public class RoomServiceImpl implements RoomService {
   private final SimpMessagingTemplate messagingTemplate;
   private final InterviewRepository interviewRepository;
   private final WebRtcService webRtcService;
-
-  //    private final InterviewParticipantRepository participantRepository; // Added for role
   // updates
 
   // ==========================================
@@ -209,7 +207,9 @@ public class RoomServiceImpl implements RoomService {
     return true;
   }
 
-  // ==========================================
+
+
+    // ==========================================
   // STOMP WEBSOCKET METHODS (Live Session)
   // ==========================================
 
