@@ -185,11 +185,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-websocket</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.livekit</groupId>
-            <artifactId>livekit-server</artifactId>
-            <version>0.8.2</version>
-        </dependency>
     </dependencies>
 
     <build>

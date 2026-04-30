@@ -1,16 +1,15 @@
 package com.innerview.spring.controller;
 
 import com.innerview.spring.dto.ActiveRoomDto;
-import com.innerview.spring.dto.SfuAccessTokenDto;
 import com.innerview.spring.service.RoomService;
 import java.util.UUID;
-
-import com.innerview.spring.service.SfuService;
-import io.livekit.server.AccessToken;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/rooms")
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 public class RoomController {
 
     private final RoomService roomService;
-    private final SfuService sfuService;
 
     /**
      * Called by the frontend via standard HTTP POST right BEFORE opening the WebSocket. Validates the
@@ -44,13 +42,6 @@ public class RoomController {
         roomService.leaveRoom(roomId, currentUserId);
 
         return ResponseEntity.ok().build();
-    }
-
-    @CrossOrigin(origins = "*")
-    @GetMapping("/token")
-    public ResponseEntity<SfuAccessTokenDto> getToken(@AuthenticationPrincipal UUID currentUserId,
-                                                      @RequestParam String roomId) {
-        return ResponseEntity.ok().body(sfuService.generateSfuAccessToken(roomId,currentUserId));
     }
 }
 
