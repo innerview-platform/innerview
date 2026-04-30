@@ -40,11 +40,6 @@ public class RoomServiceImpl implements RoomService {
   private final SimpMessagingTemplate messagingTemplate;
   private final InterviewRepository interviewRepository;
   private final WebRtcService webRtcService;
-  private final UserRepository userRepository;
-  private final String API_KEY = "devkey";
-  private final String API_SECRET = "secret";
-
-  //    private final InterviewParticipantRepository participantRepository; // Added for role
   // updates
 
   // ==========================================
@@ -212,27 +207,7 @@ public class RoomServiceImpl implements RoomService {
     return true;
   }
 
-    @Override
-    public SfuAccessTokenDto generateSfuAccessToken(String roomId, UUID userId) {
-        AccessToken token = new AccessToken(API_KEY, API_SECRET);
 
-        Optional<User> user = userRepository.findUserById(userId);
-        if(user.isEmpty())
-            throw new UserNotFound("User not found with id: " + userId);
-        String participantName = user.get().getName();
-        // The display name shown in the UI
-        token.setName(participantName);
-
-        // LiveKit REQUIRES a unique identity for every user
-        String uniqueIdentity = participantName + "-" + UUID.randomUUID().toString().substring(0, 6);
-        token.setIdentity(uniqueIdentity);
-
-        // Grant permission to join the specific room
-        token.addGrants(new RoomJoin(true), new RoomName(roomId));
-
-        // Generate and return the perfectly formatted JWT string
-        return new SfuAccessTokenDto(token.toJwt());
-    }
 
     // ==========================================
   // STOMP WEBSOCKET METHODS (Live Session)

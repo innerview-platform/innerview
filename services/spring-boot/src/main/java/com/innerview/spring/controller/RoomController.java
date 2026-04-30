@@ -5,6 +5,7 @@ import com.innerview.spring.dto.SfuAccessTokenDto;
 import com.innerview.spring.service.RoomService;
 import java.util.UUID;
 
+import com.innerview.spring.service.SfuService;
 import io.livekit.server.AccessToken;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 public class RoomController {
 
     private final RoomService roomService;
+    private final SfuService sfuService;
 
     /**
      * Called by the frontend via standard HTTP POST right BEFORE opening the WebSocket. Validates the
@@ -48,7 +50,7 @@ public class RoomController {
     @GetMapping("/token")
     public ResponseEntity<SfuAccessTokenDto> getToken(@AuthenticationPrincipal UUID currentUserId,
                                                       @RequestParam String roomId) {
-        return ResponseEntity.ok().body(roomService.generateSfuAccessToken(roomId,currentUserId));
+        return ResponseEntity.ok().body(sfuService.generateSfuAccessToken(roomId,currentUserId));
     }
 }
 

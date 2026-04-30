@@ -30,5 +30,4 @@ public interface RoomService {
       String roomId, UUID requesterId, UUID targetUserId, InterviewRole newRole);
 
   boolean hasUserJoinedRoom(String roomId, UUID userId);
-  SfuAccessTokenDto generateSfuAccessToken(String roomId, UUID userId);
 }
