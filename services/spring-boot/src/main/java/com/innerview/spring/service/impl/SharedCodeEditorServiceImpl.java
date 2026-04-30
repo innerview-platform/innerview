@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -108,5 +109,13 @@ public class SharedCodeEditorServiceImpl implements SharedCodeEditorService {
 
         log.info("[compiling] code in room {} ",roomId);
 
+    }
+
+    @Override
+    public void cursorUpdate(String roomId, Map<String, Object> cursorState) {
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId + "/cursors",
+                cursorState
+        );
     }
 }

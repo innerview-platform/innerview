@@ -3,6 +3,7 @@ package com.innerview.spring.service;
 import com.innerview.spring.dto.CodeUpdatePayload;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -13,5 +14,6 @@ public interface SharedCodeEditorService {
      void updateCode(String roomId, CodeUpdatePayload newCode);
      CodeUpdatePayload getCodeSnapshot(String roomId);
      void compileCode(String roomId,CodeUpdatePayload newCode);
+     void cursorUpdate(String roomId, Map<String,Object> cursorState);
 }
 

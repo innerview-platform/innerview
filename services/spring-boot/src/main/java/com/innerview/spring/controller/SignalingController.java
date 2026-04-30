@@ -66,7 +66,7 @@ public class SignalingController {
         roomService.changeParticipantRole(roomId, senderId, targetId, newRole);
         break;
 
-            case "CODE_UPDATE":
+        case "CODE_UPDATE":
                 // 1. Let Jackson automatically parse the raw JSON payload into our exact Record
                 CodeUpdatePayload codeUpdatePayload = objectMapper.convertValue(message.getPayload(), CodeUpdatePayload.class);
 
@@ -76,6 +76,11 @@ public class SignalingController {
                 CodeUpdatePayload payload = objectMapper.convertValue(message.getPayload(), CodeUpdatePayload.class);
                 sharedCodeEditorService.compileCode(roomId,payload);
                 break;
+        case "CURSOR_UPDATE":
+            @SuppressWarnings("unchecked")
+            Map<String,Object> cursorState = (Map<String,Object>) message.getPayload();
+            sharedCodeEditorService.cursorUpdate(roomId,cursorState);
+            break;
       case "OFFER":
       case "ANSWER":
       case "ICE_CANDIDATE":
