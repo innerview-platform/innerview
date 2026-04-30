@@ -64,7 +64,9 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
-        run: ./mvnw test -e 2>&1 | grep -A 5 "Caused by:"
+        run: |
+          set -o pipefail        # ← makes pipe fail if mvnw fails
+          ./mvnw test -e 2>&1 | grep -A 5 "Caused by:"
 
       - name: Print test failures
         if: failure()
