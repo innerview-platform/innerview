@@ -15,9 +15,29 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: services/spring-boot  
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: innerview_db
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     steps:
       - uses: actions/checkout@v4
@@ -30,8 +50,25 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('services/spring-boot/**/pom.xml') }}
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      - name: Run tests
+      - name: Run spring-boot tests
+        working-directory: services/spring-boot
+        env:
+          DB_URL: jdbc:mysql://localhost:3306/innerview_db
+          DB_USERNAME: root
+          DB_PASSWORD: root
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
         run: ./mvnw test
+
+      - name: Print test failures
+        if: failure()
+        run: |
+          find services/spring-boot/target/surefire-reports -name "*.txt" | \
+          xargs grep -l "ERROR\|FAILED" | \
+          xargs cat
