@@ -56,17 +56,8 @@ jobs:
       - name: Run spring-boot tests
         working-directory: services/spring-boot
         env:
-          DB_URL: jdbc:mysql://localhost:3306/innerview_db
-          DB_USERNAME: root
-          DB_PASSWORD: root
-          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
-          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
-        run: |
-          set -o pipefail        # ← makes pipe fail if mvnw fails
-          ./mvnw test -e 2>&1 | grep -A 5 "Caused by:"
+          SPRING_PROFILES_ACTIVE: test
+        run: ./mvnw test
 
       - name: Print test failures
         if: failure()
