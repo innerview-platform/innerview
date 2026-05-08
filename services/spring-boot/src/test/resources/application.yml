@@ -1,0 +1,46 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/innerview_db
+    username: root
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: create  
+    database-platform: org.hibernate.dialect.MySQLDialect
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: openid,profile,email
+            redirect-uri: "http://localhost:8080/login/oauth2/code/google"
+            authorization-grant-type: authorization_code
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+            jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: test@test.com
+    password: test-password
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+jwt:
+  secret: dGVzdC1mYWtlLXNlY3JldC1rZXktZm9yLWNpLXRlc3Rpbmctb25seQ==
+  access-token:
+    expiration: 900000
+  refresh-token:
+    expiration: 604800000
+
+frontend:
+  url: "http://localhost:3000"
+interview:
+  duration: 150

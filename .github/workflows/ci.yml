@@ -1,0 +1,67 @@
+name: Java CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - development
+
+concurrency:
+  group: ci-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: innerview_db
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Run spring-boot tests
+        working-directory: services/spring-boot
+        env:
+          SPRING_PROFILES_ACTIVE: test
+        run: ./mvnw test
+
+      - name: Print test failures
+        if: failure()
+        run: |
+          find services/spring-boot/target/surefire-reports -name "*.txt" | \
+          xargs grep -l "ERROR\|FAILED" | \
+          xargs cat
