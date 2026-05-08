@@ -47,9 +47,9 @@ public class RoomController {
     }
 
     @CrossOrigin(origins = "*")
-    @GetMapping("/token")
+    @GetMapping("/{roomId}/token")
     public ResponseEntity<SfuAccessTokenDto> getToken(@AuthenticationPrincipal UUID currentUserId,
-                                                      @RequestParam String roomId) {
+                                                      @PathVariable String roomId) {
         return ResponseEntity.ok().body(sfuService.generateSfuAccessToken(roomId,currentUserId));
     }
 }

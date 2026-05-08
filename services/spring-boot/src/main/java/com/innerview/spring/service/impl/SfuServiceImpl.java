@@ -1,9 +1,14 @@
 package com.innerview.spring.service.impl;
 
 import com.innerview.spring.dto.SfuAccessTokenDto;
+import com.innerview.spring.entity.ActiveRoom;
+import com.innerview.spring.entity.Interview;
 import com.innerview.spring.entity.User;
+import com.innerview.spring.exception.RoomNotFoundException;
 import com.innerview.spring.exception.UserNotFound;
+import com.innerview.spring.repository.InterviewRepository;
 import com.innerview.spring.repository.UserRepository;
+import com.innerview.spring.service.RoomService;
 import com.innerview.spring.service.SfuService;
 import io.livekit.server.AccessToken;
 import io.livekit.server.RoomJoin;
@@ -21,8 +26,20 @@ public class SfuServiceImpl implements SfuService {
     private final String API_KEY = "devkey";
     private final String API_SECRET = "secret";
     private final UserRepository userRepository;
+    private final RoomService  roomService;
+    private final InterviewRepository interviewRepository;
     @Override
     public SfuAccessTokenDto generateSfuAccessToken(String roomId, UUID userId) {
+
+
+        // Fallback: Load from DB if server restarted or room dropped from memory
+
+        if (!roomService.isRoomExists(roomId)) {
+            Interview interview = interviewRepository.getInterviewsByRoomId(roomId);
+            if (interview == null) {
+                throw new RoomNotFoundException("Room with ID: " + roomId + " not found");
+            }
+        }
         AccessToken token = new AccessToken(API_KEY, API_SECRET);
 
         Optional<User> user = userRepository.findUserById(userId);
