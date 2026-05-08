@@ -95,6 +95,7 @@ public class RoomServiceImpl implements RoomService {
     activeRooms.put(roomId, room);
   }
 
+
     @Override
     public ActiveRoomDto joinRoom(String roomId, UUID userId) {
         ActiveRoom room = activeRooms.get(roomId);
@@ -206,7 +207,10 @@ public class RoomServiceImpl implements RoomService {
     if (room.getParticipants().get(userId) == null) return false;
     return true;
   }
-
+    @Override
+    public boolean isRoomExists(String roomId) {
+        return activeRooms.containsKey(roomId);
+    }
 
 
     // ==========================================

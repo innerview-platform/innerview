@@ -30,4 +30,5 @@ public interface RoomService {
       String roomId, UUID requesterId, UUID targetUserId, InterviewRole newRole);
 
   boolean hasUserJoinedRoom(String roomId, UUID userId);
+  boolean isRoomExists(String roomId);
 }
