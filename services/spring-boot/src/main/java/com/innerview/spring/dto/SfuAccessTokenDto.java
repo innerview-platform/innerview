@@ -7,6 +7,6 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class SfuAccessTokenDto {
-    @JsonProperty("sfu_access_token")
+    @JsonProperty("token")
     String SfuAccessToken;
 }
