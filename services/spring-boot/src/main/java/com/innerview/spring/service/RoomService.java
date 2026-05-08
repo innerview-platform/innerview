@@ -1,6 +1,7 @@
 package com.innerview.spring.service;
 
 import com.innerview.spring.dto.ActiveRoomDto;
+import com.innerview.spring.dto.SfuAccessTokenDto;
 import com.innerview.spring.enums.InterviewRole;
 import com.innerview.spring.enums.InterviewType;
 import org.springframework.stereotype.Service;
@@ -29,4 +30,5 @@ public interface RoomService {
       String roomId, UUID requesterId, UUID targetUserId, InterviewRole newRole);
 
   boolean hasUserJoinedRoom(String roomId, UUID userId);
+  boolean isRoomExists(String roomId);
 }
