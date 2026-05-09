@@ -45,8 +45,9 @@ public class Problem {
     @Column( nullable = false)
     private Difficulty difficulty;
 
-    @JdbcTypeCode(SqlTypes.ARRAY)
-    @Column( columnDefinition = "text[]")
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "problem_tags", joinColumns = @JoinColumn(name = "problem_id"))
+    @Column(name = "tag", nullable = false, length = 100)
     private List<String> tags = new ArrayList<>();
 
     @Column( columnDefinition = "TEXT")
