@@ -1,5 +1,6 @@
 package com.innerview.spring.controller;
 
+import com.innerview.spring.repository.UserProfileRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,8 @@ class AuthControllerIntegrationTest {
 
 	@Autowired
 	private UserRepository userRepository;
+	@Autowired
+	private UserProfileRepository userProfileRepository;
 
 	@Autowired
 	private JwtUtil jwtUtil;
@@ -46,6 +49,7 @@ class AuthControllerIntegrationTest {
 	void setUp() {
 
 		refreshTokenRepository.deleteAll();
+		userProfileRepository.deleteAll();
 		userRepository.deleteAll();
 
 		testUser = new User();
