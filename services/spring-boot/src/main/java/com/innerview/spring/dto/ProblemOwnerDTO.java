@@ -15,7 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProblemOwnerDTO  {
+public class ProblemOwnerDTO implements ProblemDTO  {
     private UUID id;
 
     private String title;
