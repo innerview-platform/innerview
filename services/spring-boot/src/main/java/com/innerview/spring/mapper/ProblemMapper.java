@@ -5,7 +5,7 @@ import com.innerview.spring.entity.Problem;
 import com.innerview.spring.entity.User;
 import org.mapstruct.*;
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface ProblemMapper {
 
     ProblemResponseDTO toResponseDTO(Problem problem);
