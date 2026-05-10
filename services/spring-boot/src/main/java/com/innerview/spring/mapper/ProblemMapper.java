@@ -17,9 +17,7 @@ public interface ProblemMapper {
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "isActive",  ignore = true)
-
-
+    @Mapping(target = "active",  ignore = true)
     Problem toEntity(CreateProblemRequest request);
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id",        ignore = true)

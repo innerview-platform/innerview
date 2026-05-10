@@ -1,5 +1,6 @@
 package com.innerview.spring.dto;
 
+import com.innerview.spring.entity.ProgrammingLanguage;
 import com.innerview.spring.enums.Difficulty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
@@ -37,5 +38,5 @@ public class CreateProblemRequest {
 
     private String solutionCode;
 
-    private String solutionLanguage;
+    private ProgrammingLanguage solutionLanguage;
 }
