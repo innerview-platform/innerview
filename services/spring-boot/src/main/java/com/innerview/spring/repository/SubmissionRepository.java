@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface SubmissionRepository extends JpaRepository<Submission, UUID> {
+    Optional<Submission> findByIdAndUserId(UUID id, UUID userId);
 
     List<Submission> findAllByUserIdOrderBySubmittedAtDesc(UUID userId);
 

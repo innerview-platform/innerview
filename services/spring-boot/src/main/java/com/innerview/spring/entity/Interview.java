@@ -8,6 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -43,6 +44,14 @@ public class Interview {
     private Integer durationMinutes;
     private UUID ownerId;
     private String roomId;
+
+    @ManyToMany
+    @JoinTable(
+            name = "interview_problems",
+            joinColumns = @JoinColumn(name = "interview_id"),
+            inverseJoinColumns = @JoinColumn(name = "problem_id")
+    )
+    private List<Problem> problems = new ArrayList<>();
 
     @CreationTimestamp
     private LocalDateTime createdAt;

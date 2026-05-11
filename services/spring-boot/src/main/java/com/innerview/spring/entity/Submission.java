@@ -51,11 +51,11 @@ public class Submission {
     private UUID id;
 
     @NotNull
-    @Column(nullable = false, updatable = false)
+    @Column(name = "user_id", nullable = false, updatable = false)
     private UUID userId;
 
     @NotNull
-    @Column(nullable = false, updatable = false)
+    @Column(name = "interview_id", nullable = false, updatable = false)
     private Long interviewId;
 
     @NotNull
