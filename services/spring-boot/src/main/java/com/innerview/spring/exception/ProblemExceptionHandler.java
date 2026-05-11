@@ -26,4 +26,10 @@ public class ProblemExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ErrorMessageResponse(e.getMessage()));
     }
+
+    @ExceptionHandler(TestCaseNotFoundException.class)
+    public ResponseEntity<ErrorMessageResponse> handleTestCaseNotFoundException(TestCaseNotFoundException e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ErrorMessageResponse(e.getMessage()));
+    }
 }

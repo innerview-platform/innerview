@@ -109,4 +109,7 @@ public class Problem {
     void onPreUpdate() {
         this.updatedAt = Instant.now();
     }
+    @OrderBy("orderIndex ASC")
+    @OneToMany(mappedBy = "problem", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<TestCase> testCases = new ArrayList<>();
 }
