@@ -1,6 +1,7 @@
 package com.innerview.spring.controller;
 
 import com.innerview.spring.dto.*;
+import com.innerview.spring.entity.TestCase;
 import com.innerview.spring.service.ProblemService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -107,6 +109,52 @@ public class ProblemController {
         ProblemOwnerDTO restoredProblem = problemService.restoreProblem(id, currentUserId);
 
         return ResponseEntity.ok(restoredProblem);
+    }
+
+    @GetMapping("/{id}/test-cases")
+    public ResponseEntity<List<TestCaseDto>> getAllTestCases(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UUID currentUserId) {
+        List<TestCaseDto> testCases = problemService.getAllTestCases(id, currentUserId);
+        return ResponseEntity.ok(testCases);
+    }
+
+    @PostMapping("/{id}/test-cases") // FIXED: Changed to POST
+    public ResponseEntity<List<TestCaseDto>> createProblemTestCase(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UUID currentUserId,
+            @Valid @RequestBody TestCaseDto request) { // FIXED: Added @Valid
+
+        List<TestCaseDto> updatedTestCases = problemService.createProblemTestCase(request,id, currentUserId);
+
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .build()
+                .toUri();
+
+        return ResponseEntity.created(location).body(updatedTestCases);
+    }
+
+    @PutMapping("/{id}/test-cases/{testCaseId}")
+    public ResponseEntity<List<TestCaseDto>> updateProblemTestCase(
+            @PathVariable UUID id,
+            @PathVariable UUID testCaseId,
+            @AuthenticationPrincipal UUID currentUserId,
+            @Valid @RequestBody TestCaseDto request) {
+
+        List<TestCaseDto> updatedTestCases = problemService.updateProblemTestCase( request, id,testCaseId, currentUserId);
+
+        return ResponseEntity.ok(updatedTestCases);
+    }
+    @DeleteMapping("/{id}/test-cases/{testCaseId}")
+    public ResponseEntity<Void> deleteProblemTestCase(
+            @PathVariable UUID id,
+            @PathVariable UUID testCaseId,
+            @AuthenticationPrincipal UUID currentUserId) {
+
+        problemService.deleteProblemTestCase(id, testCaseId, currentUserId);
+
+        return ResponseEntity.noContent().build();
     }
 }
 

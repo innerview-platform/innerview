@@ -2,6 +2,7 @@ package com.innerview.spring.mapper;
 
 import com.innerview.spring.dto.*;
 import com.innerview.spring.entity.Problem;
+import com.innerview.spring.entity.TestCase;
 import com.innerview.spring.entity.User;
 import org.mapstruct.*;
 
@@ -25,7 +26,4 @@ public interface ProblemMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromRequest(UpdateProblemRequest request, @MappingTarget Problem problem);
-
-
-
 }

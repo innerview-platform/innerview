@@ -2,12 +2,15 @@ package com.innerview.spring.service.impl;
 
 import com.innerview.spring.dto.*;
 import com.innerview.spring.entity.Problem;
+import com.innerview.spring.entity.TestCase;
 import com.innerview.spring.entity.User;
 import com.innerview.spring.enums.Difficulty;
+import com.innerview.spring.exception.*;
 import com.innerview.spring.exception.ProblemNotFoundException;
 import com.innerview.spring.exception.ProblemRestorationException;
 import com.innerview.spring.exception.UserNotFound;
 import com.innerview.spring.mapper.ProblemMapper;
+import com.innerview.spring.mapper.TestCaseMapper;
 import com.innerview.spring.repository.ProblemRepository;
 import com.innerview.spring.repository.UserRepository;
 import com.innerview.spring.service.ProblemService;
@@ -22,6 +25,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
+import java.util.Comparator;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -32,6 +37,7 @@ public class ProblemServiceImpl implements ProblemService {
     private final ProblemMapper problemMapper;
     private final UserRepository userRepository;
     private final ProblemService problemService;
+    private final TestCaseMapper testCaseMapper;
 
     @Override
     public Page<ProblemResponseDTO> getAllProblems(
@@ -198,5 +204,87 @@ public class ProblemServiceImpl implements ProblemService {
             throw new ProblemRestorationException("Problem is already active and cannot be restored.");
         }
     }
+
+    @Override
+    public List<TestCaseDto> getAllTestCases(UUID id, UUID currentUserId) {
+
+        Problem problem = problemRepository.findById(id)
+                .orElseThrow(() -> new ProblemNotFoundException("Problem with id: " + id));
+
+        boolean isOwner = currentUserId != null &&
+                problem.getCreatedBy().getId().equals(currentUserId);
+
+        return problem.getTestCases().stream()
+                .filter(testCase -> isOwner || testCase.isSample())
+                .sorted(Comparator.comparing(TestCase::getOrderIndex))
+                .map(testCaseMapper::toTestCaseDto)
+                .toList();
+    }
+
+    @Transactional
+    @Override
+    public List<TestCaseDto> createProblemTestCase( TestCaseDto request,UUID problemId, UUID currentUserId) {
+
+        Problem problem = problemRepository.findById(problemId)
+                .orElseThrow(() -> new ProblemNotFoundException("Problem with id: " + problemId));
+
+        if (!problem.getCreatedBy().getId().equals(currentUserId)) {
+            throw new AuthorizationDeniedException("You do not have permission to create test cases for this problem.");
+        }
+
+        if (problem.getTestCases().size() >= 100) {
+            throw new MaxTestCaseException("A problem cannot have more than 100 test cases.");
+        }
+
+        TestCase testCase = testCaseMapper.toEntity(request);
+        testCase.setProblem(problem);
+
+        int nextOrderIndex = problem.getTestCases().isEmpty() ? 0 :
+                problem.getTestCases().stream().mapToInt(TestCase::getOrderIndex).max().orElse(0) + 1;
+        testCase.setOrderIndex(nextOrderIndex);
+
+
+        problem.getTestCases().add(testCase);
+        problemRepository.save(problem);
+
+        return getAllTestCases(problemId, currentUserId);
+    }
+
+    @Override
+    @Transactional
+    public List<TestCaseDto> updateProblemTestCase( TestCaseDto request,UUID problemId, UUID testCaseId, UUID currentUserId) {
+
+        Problem problem = problemRepository.findById(problemId)
+                .orElseThrow(() -> new ProblemNotFoundException("Problem with id: " + problemId));
+
+        if (!problem.getCreatedBy().getId().equals(currentUserId)) {
+            throw new AuthorizationDeniedException("You do not have permission to update this problem.");
+        }
+
+        TestCase existingTestCase = problem.getTestCases().stream()
+                .filter(tc -> tc.getId().equals(testCaseId))
+                .findFirst()
+                .orElseThrow(() -> new TestCaseNotFoundException("Test case not found with id: " + testCaseId));
+
+        testCaseMapper.updateEntityFromDto(request, existingTestCase);
+
+        problemRepository.save(problem);
+
+        return getAllTestCases(problemId, currentUserId);
+    }
+    @Override
+    public void deleteProblemTestCase(UUID problemId, UUID testCaseId, UUID currentUserId) {
+        Problem problem = problemRepository.findById(problemId)
+                .orElseThrow(() -> new ProblemNotFoundException("Problem with id: " + problemId));
+        if (!problem.getCreatedBy().getId().equals(currentUserId)) {
+            throw new AuthorizationDeniedException("You do not have permission to update this problem.");
+        }
+        boolean wasRemoved = problem.getTestCases().removeIf(tc -> tc.getId().equals(testCaseId));
+        if (!wasRemoved) {
+            throw new TestCaseNotFoundException("Test case not found with id: " + testCaseId);
+        }
+        problemRepository.save(problem);
+    }
+
 
 }
