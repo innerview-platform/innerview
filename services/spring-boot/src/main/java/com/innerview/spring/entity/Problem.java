@@ -86,6 +86,13 @@ public class Problem {
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 
+    @OneToMany(
+            mappedBy = "problem",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<TestCase> testCases = new ArrayList<>();
+
     // LAZY fetch maintained here
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
