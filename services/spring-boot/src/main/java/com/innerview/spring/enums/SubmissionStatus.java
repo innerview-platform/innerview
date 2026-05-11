@@ -8,5 +8,6 @@ public enum SubmissionStatus {
     TIME_LIMIT_EXCEEDED,
     MEMORY_LIMIT_EXCEEDED,
     COMPILE_ERROR,
-    RUNTIME_ERROR
+    RUNTIME_ERROR,
+    SKIPPED
 }

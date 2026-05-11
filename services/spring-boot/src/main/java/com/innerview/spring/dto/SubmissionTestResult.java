@@ -14,5 +14,10 @@ public class SubmissionTestResult {
     private UUID testCaseId;
     private SubmissionStatus status;
     private String actualOutput;
+    private String errorOutput;
     private Long durationMs;
+    private Long memoryBytes;
+    private Integer orderIndex;
+    private Integer weight;
+    private Boolean sample;
 }
