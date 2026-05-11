@@ -36,7 +36,6 @@ public class ProblemServiceImpl implements ProblemService {
     private final ProblemRepository problemRepository;
     private final ProblemMapper problemMapper;
     private final UserRepository userRepository;
-    private final ProblemService problemService;
     private final TestCaseMapper testCaseMapper;
 
     @Override

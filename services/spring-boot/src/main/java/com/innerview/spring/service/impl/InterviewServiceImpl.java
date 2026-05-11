@@ -6,9 +6,11 @@ import com.innerview.spring.dto.InterviewResponse;
 import com.innerview.spring.dto.InterviewSummaryDto;
 import com.innerview.spring.dto.ScheduledInterviewRequest;
 import com.innerview.spring.entity.Interview;
+import com.innerview.spring.entity.Problem;
 import com.innerview.spring.enums.InterviewStatus;
 import com.innerview.spring.mapper.InterviewMapper;
 import com.innerview.spring.repository.InterviewRepository;
+import com.innerview.spring.repository.ProblemRepository;
 import com.innerview.spring.service.InterviewService;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Service;
 public class InterviewServiceImpl implements InterviewService {
     private final InterviewRepository interviewRepository;
     private final InterviewMapper interviewMapper;
+    private final ProblemRepository problemRepository;
 
     @Value("${frontend.url}")
     private String frontendUrl;
@@ -53,6 +56,7 @@ public class InterviewServiceImpl implements InterviewService {
         // Set status to active/in-progress for instant interviews
         interview.setStatus(InterviewStatus.STARTED);
         interview.setDurationMinutes(interviewDuration);
+        interview.setProblems(resolveProblems(request.getProblemIds()));
 
         Interview savedInterview = interviewRepository.save(interview);
 
@@ -82,6 +86,7 @@ public class InterviewServiceImpl implements InterviewService {
         Instant startTime = request.getStartTime();
         interview.setStartTime(startTime);
         interview.setDurationMinutes(interviewDuration);
+        interview.setProblems(resolveProblems(request.getProblemIds()));
 
         // Automatically calculate the end time based on duration
         interview.setEndTime(startTime.plus(interviewDuration, ChronoUnit.MINUTES));
@@ -96,5 +101,14 @@ public class InterviewServiceImpl implements InterviewService {
         response.setRoomLink(frontendUrl + "/room/join/" + savedInterview.getRoomId());
 
         return response;
+    }
+
+    private List<Problem> resolveProblems(List<UUID> problemIds) {
+        if (problemIds == null || problemIds.isEmpty()) {
+            return List.of();
+        }
+        return problemRepository.findAllById(problemIds).stream()
+                .filter(Problem::isActive)
+                .toList();
     }
 }
