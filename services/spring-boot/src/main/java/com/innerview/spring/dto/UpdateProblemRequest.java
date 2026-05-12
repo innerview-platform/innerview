@@ -1,11 +1,15 @@
 package com.innerview.spring.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.innerview.spring.entity.ProgrammingLanguage;
 import com.innerview.spring.enums.Difficulty;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 @Data
@@ -15,7 +19,7 @@ import java.util.List;
 public class UpdateProblemRequest {
     private String title;
 
-    private String slug;
+
 
     private String statement;
 
@@ -33,7 +37,7 @@ public class UpdateProblemRequest {
 
     private String solutionCode;
 
-    private String solutionLanguage;
+    private ProgrammingLanguage solutionLanguage;
 
     Boolean isActive;
 }

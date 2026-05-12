@@ -2,10 +2,11 @@ package com.innerview.spring.mapper;
 
 import com.innerview.spring.dto.*;
 import com.innerview.spring.entity.Problem;
+import com.innerview.spring.entity.TestCase;
 import com.innerview.spring.entity.User;
 import org.mapstruct.*;
 
-@Mapper
+@Mapper(componentModel = "spring")
 public interface ProblemMapper {
 
     ProblemResponseDTO toResponseDTO(Problem problem);
@@ -17,9 +18,7 @@ public interface ProblemMapper {
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "isActive",  ignore = true)
-
-
+    @Mapping(target = "active",  ignore = true)
     Problem toEntity(CreateProblemRequest request);
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id",        ignore = true)
@@ -27,7 +26,4 @@ public interface ProblemMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateEntityFromRequest(UpdateProblemRequest request, @MappingTarget Problem problem);
-
-
-
 }

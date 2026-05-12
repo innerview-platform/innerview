@@ -1,4 +1,5 @@
 package com.innerview.spring.dto;
+import com.innerview.spring.entity.ProgrammingLanguage;
 import com.innerview.spring.enums.Difficulty;
 import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
@@ -14,7 +15,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProblemOwnerDTO  {
+public class ProblemOwnerDTO implements ProblemDTO  {
     private UUID id;
 
     private String title;
@@ -41,5 +42,5 @@ public class ProblemOwnerDTO  {
 
     //just visible to the owner
     private String solutionCode;
-    private String solutionLanguage;
+    private ProgrammingLanguage solutionLanguage;
 }

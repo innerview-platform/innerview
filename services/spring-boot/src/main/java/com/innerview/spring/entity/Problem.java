@@ -8,8 +8,6 @@ import jakarta.validation.constraints.Positive;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -27,22 +25,26 @@ import java.util.UUID;
 @Setter
 @NoArgsConstructor
 public class Problem {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
+
     @NotBlank
     @Column(nullable = false)
     private String title;
+
     @Column(nullable = false)
     private String slug;
+
     @NotBlank
-    @Column( nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String statement;
 
     @NotNull
     @Enumerated(EnumType.STRING)
-    @Column( nullable = false)
+    @Column(nullable = false)
     private Difficulty difficulty;
 
     @ElementCollection(fetch = FetchType.LAZY)
@@ -50,7 +52,7 @@ public class Problem {
     @Column(name = "tag", nullable = false, length = 100)
     private List<String> tags = new ArrayList<>();
 
-    @Column( columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String explanation;
 
     @Positive
@@ -61,12 +63,12 @@ public class Problem {
     @Column(name = "memory_limit_mb", nullable = false)
     private Integer memoryLimitMb = 256;
 
-    // Reference solution  (hidden from interviewees)
     @Column(name = "solution_code", columnDefinition = "TEXT")
     private String solutionCode;
 
+    // LAZY fetch added here
     @NotNull
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "solution_language",
             nullable = false,
@@ -84,6 +86,14 @@ public class Problem {
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 
+    @OneToMany(
+            mappedBy = "problem",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<TestCase> testCases = new ArrayList<>();
+
+    // LAZY fetch maintained here
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -94,35 +104,16 @@ public class Problem {
     )
     private User createdBy;
 
+
     @PrePersist
     void onPrePersist() {
         Instant now = Instant.now();
         this.createdAt = now;
         this.updatedAt = now;
-
-        if (this.slug == null || this.slug.isBlank()) {
-            this.slug = generateSlug(this.title);
-        }
     }
 
     @PreUpdate
     void onPreUpdate() {
         this.updatedAt = Instant.now();
     }
-
-    public static String generateSlug(String title) {
-        if (title == null || title.isBlank()) {
-            throw new IllegalArgumentException("Title must not be blank when generating a slug");
-        }
-        return title.trim()
-                .toLowerCase()
-                .replaceAll("[^a-z0-9]+", "-")
-                .replaceAll("^-|-$", "");
-    }
-
-
-
-
-
-
 }

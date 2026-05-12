@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Repository
@@ -19,4 +20,12 @@ public interface InterviewRepository extends JpaRepository<Interview, Long> {
     List<Interview> findCompletedInterviewsByUserIdNative(@Param("userId") UUID userId);
 
     Interview getInterviewsByRoomId(String roomId);
+
+    @Query("""
+            select distinct i
+            from Interview i
+            left join fetch i.problems
+            where i.id = :id
+            """)
+    Optional<Interview> findByIdWithProblems(@Param("id") Long id);
 }
