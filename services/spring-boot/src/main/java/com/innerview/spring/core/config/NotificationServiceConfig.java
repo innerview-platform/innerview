@@ -1,14 +1,14 @@
 package com.innerview.spring.core.config;
 
-import com.innerview.spring.entity.InterviewEvent;
+import com.innerview.spring.entity.scheduleNotification;
 import com.innerview.spring.repository.OutboxRepository;
 import com.innerview.spring.service.NotificationPublisherService;
 import com.innerview.spring.service.impl.NotificationService;
+import com.innerview.spring.service.notification.EmailNotificationWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jmx.export.notification.NotificationPublisher;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -54,7 +54,7 @@ public class NotificationServiceConfig {
      * Dedicated queue for in-app (SSE) notifications.
      */
     @Bean
-    public LinkedBlockingQueue<InterviewEvent> inAppQueue() {
+    public LinkedBlockingQueue<scheduleNotification> inAppQueue() {
         return new LinkedBlockingQueue<>(QUEUE_CAPACITY);
     }
 
@@ -62,7 +62,7 @@ public class NotificationServiceConfig {
      * Dedicated queue for email notifications.
      */
     @Bean
-    public LinkedBlockingQueue<InterviewEvent> emailQueue() {
+    public LinkedBlockingQueue<scheduleNotification> emailQueue() {
         return new LinkedBlockingQueue<>(QUEUE_CAPACITY);
     }
 
@@ -73,8 +73,8 @@ public class NotificationServiceConfig {
      * Uses graceful shutdown to prevent dropping messages during deployments.
      */
     @Bean(destroyMethod = "shutdown")
-    public ThreadPoolExecutor inAppExecutor(LinkedBlockingQueue<InterviewEvent> inAppQueue) {
-        return buildWarmPool(inAppQueue, "InApp");
+    public ThreadPoolExecutor inAppExecutor(LinkedBlockingQueue<scheduleNotification> inAppQueue) {
+        return buildWarmPool("InApp");
     }
 
     /**
@@ -83,16 +83,17 @@ public class NotificationServiceConfig {
      */
     @Bean(destroyMethod = "shutdown")
     public ThreadPoolExecutor emailExecutor(
-            LinkedBlockingQueue<InterviewEvent> emailQueue,
+            LinkedBlockingQueue<scheduleNotification> emailQueue,
             OutboxRepository outboxRepository,
             SesClient sesClient) {
 
-        ThreadPoolExecutor executor = buildWarmPool(emailQueue, "Email");
+        ThreadPoolExecutor executor = buildWarmPool( "Email");
 
         // Submit one EmailNotificationWorker per thread.
-//        for (int i = 0; i < POOL_SIZE; i++) {
-//          //  executor.submit(new EmailNotificationWorker(emailQueue, outboxRepository, sesClient));
-//        }
+        for (int i = 0; i < POOL_SIZE; i++) {
+            executor.submit(new EmailNotificationWorker(outboxRepository,sesClient,emailQueue));
+        }
+
 
         log.info("emailExecutor started with {} permanently warm threads", POOL_SIZE);
         return executor;
@@ -102,8 +103,8 @@ public class NotificationServiceConfig {
 
     @Bean
     public NotificationPublisherService notificationPublisher(
-            LinkedBlockingQueue<InterviewEvent> inAppQueue,
-            LinkedBlockingQueue<InterviewEvent> emailQueue) {
+            LinkedBlockingQueue<scheduleNotification> inAppQueue,
+            LinkedBlockingQueue<scheduleNotification> emailQueue) {
         return new NotificationService(inAppQueue, emailQueue);
     }
 
@@ -139,7 +140,7 @@ public class NotificationServiceConfig {
     /**
      * Creates a permanently warm, fixed-size thread pool.
      */
-    private ThreadPoolExecutor buildWarmPool(LinkedBlockingQueue<InterviewEvent> queue, String namePrefix) {
+    private ThreadPoolExecutor buildWarmPool( String namePrefix) {
             ThreadPoolExecutor executor = new ThreadPoolExecutor(
                     POOL_SIZE,                     // corePoolSize
                     POOL_SIZE,                     // maxPoolSize

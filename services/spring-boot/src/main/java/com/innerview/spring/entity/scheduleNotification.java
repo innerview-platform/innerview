@@ -4,16 +4,19 @@ import com.innerview.spring.enums.Channel;
 import lombok.Data;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 
 @Data
-public class InterviewEvent {
+public  class scheduleNotification {
     String eventId;
     Channel channel;
     Long interviewId;
-    UUID recipientId;
+    String recipientEmail;
     Instant createdAt;
     Map<String, Object> payload;
+    String OwnerUsername;
+    String OwnerAccount;
+    Instant date;
 }

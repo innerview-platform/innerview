@@ -1,7 +1,7 @@
 package com.innerview.spring.service;
 
-import com.innerview.spring.entity.InterviewEvent;
+import com.innerview.spring.entity.scheduleNotification;
 
 public interface NotificationPublisherService {
-    void publishEvent(InterviewEvent event);
+    void publishEvent(scheduleNotification event);
 }
