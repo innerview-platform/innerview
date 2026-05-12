@@ -7,12 +7,13 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.Data;
+import org.jetbrains.annotations.NotNull;
 
 @Data
 public class ScheduledInterviewRequest {
   InterviewType interviewType;
-  RoomSize roomSize;
-  InterviewRole creatorInterviewRole;
-  Instant startTime;
+  @NotNull RoomSize roomSize;
+  @NotNull InterviewRole creatorInterviewRole;
+  @NotNull Instant startTime;
   List<UUID> problemIds;
 }
