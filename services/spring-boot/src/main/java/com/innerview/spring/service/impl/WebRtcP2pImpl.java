@@ -18,6 +18,7 @@ public class WebRtcP2pImpl implements WebRtcService {
 
   @Override
   public void join(ActiveRoom activeRoom, UUID userId) {
+    if (activeRoom.getMaxParticipants() == -1) return;
     String roomId = activeRoom.getRoomId();
     int numberOfPartcipants = activeRoom.getActiveParticipants();
     String assignedRole = (numberOfPartcipants == 1) ? "impolite" : "polite";
