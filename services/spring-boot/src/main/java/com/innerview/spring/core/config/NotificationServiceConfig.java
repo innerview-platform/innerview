@@ -2,14 +2,17 @@ package com.innerview.spring.core.config;
 
 import com.innerview.spring.entity.InterviewEvent;
 import com.innerview.spring.repository.OutboxRepository;
-import com.innerview.spring.service.InterviewNotificationService;
-import com.interviews.notification.publisher.NotificationPublisher;
-import com.innerview.spring.worker.EmailNotificationWorker;
+import com.innerview.spring.service.NotificationPublisherService;
+import com.innerview.spring.service.impl.NotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jmx.export.notification.NotificationPublisher;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.ses.SesClient;
 
 
 import java.time.Duration;
@@ -87,9 +90,9 @@ public class NotificationServiceConfig {
         ThreadPoolExecutor executor = buildWarmPool(emailQueue, "Email");
 
         // Submit one EmailNotificationWorker per thread.
-        for (int i = 0; i < POOL_SIZE; i++) {
-            executor.submit(new EmailNotificationWorker(emailQueue, outboxRepository, sesClient));
-        }
+//        for (int i = 0; i < POOL_SIZE; i++) {
+//          //  executor.submit(new EmailNotificationWorker(emailQueue, outboxRepository, sesClient));
+//        }
 
         log.info("emailExecutor started with {} permanently warm threads", POOL_SIZE);
         return executor;
@@ -98,10 +101,10 @@ public class NotificationServiceConfig {
     // ── Publisher (router) ────────────────────────────────────────────────────
 
     @Bean
-    public NotificationPublisher notificationPublisher(
+    public NotificationPublisherService notificationPublisher(
             LinkedBlockingQueue<InterviewEvent> inAppQueue,
             LinkedBlockingQueue<InterviewEvent> emailQueue) {
-        return new InterviewNotificationService(inAppQueue, emailQueue);
+        return new NotificationService(inAppQueue, emailQueue);
     }
 
     // ── Infrastructure beans ──────────────────────────────────────────────────
@@ -109,6 +112,11 @@ public class NotificationServiceConfig {
     @Bean
     public OutboxRepository outboxRepository(DynamoDbClient dynamoDbClient) {
         return new OutboxRepository(dynamoDbClient);
+    }
+
+    @Bean
+    public DynamoDbClient dynamoDbClient() {
+        return DynamoDbClient.builder().build();
     }
 
     /**
@@ -132,17 +140,19 @@ public class NotificationServiceConfig {
      * Creates a permanently warm, fixed-size thread pool.
      */
     private ThreadPoolExecutor buildWarmPool(LinkedBlockingQueue<InterviewEvent> queue, String namePrefix) {
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(
-                POOL_SIZE,                     // corePoolSize  — always-warm threads
-                POOL_SIZE,                     // maxPoolSize   — fixed; same as core
-                0L, TimeUnit.MILLISECONDS,     // keepAlive     — unused because core == max
-                queue,                         // the channel's dedicated queue
-                new CustomizableThreadFactory(namePrefix + "-Worker-"), // Names threads for clean logging
-                new ThreadPoolExecutor.CallerRunsPolicy()  // back-pressure on overflow
-        );
+            ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                    POOL_SIZE,                     // corePoolSize
+                    POOL_SIZE,                     // maxPoolSize
+                    0L, TimeUnit.MILLISECONDS,     // keepAlive
 
-        log.info("Built warm pool '{}': coreSize={} maxSize={} queueCapacity={}",
-                namePrefix, POOL_SIZE, POOL_SIZE, QUEUE_CAPACITY);
-        return executor;
+                    new LinkedBlockingQueue<>(POOL_SIZE),
+                    new CustomizableThreadFactory(namePrefix + "-Worker-"),
+                    new ThreadPoolExecutor.CallerRunsPolicy()
+            );
+
+            log.info("Built warm pool '{}': coreSize={} maxSize={}",
+                    namePrefix, POOL_SIZE, POOL_SIZE);
+            return executor;
+        }
     }
-}
+
