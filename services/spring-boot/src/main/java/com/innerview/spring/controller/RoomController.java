@@ -40,9 +40,9 @@ public class RoomController {
   public ResponseEntity<RoomDetails> getRoomDetails(
       @PathVariable String roomId, @AuthenticationPrincipal UUID currentUserId) {
 
-    roomService.getRoomDetails(currentUserId, roomId);
+    RoomDetails roomDetails = roomService.getRoomDetails(currentUserId, roomId);
 
-    return ResponseEntity.ok().build();
+    return ResponseEntity.ok().body(roomDetails);
   }
 
   @CrossOrigin(origins = "*")
