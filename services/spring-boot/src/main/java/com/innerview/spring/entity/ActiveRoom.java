@@ -11,7 +11,7 @@ public class ActiveRoom {
   private String roomId;
   private Long interviewId;
   private UUID ownerId;
-  private int maxParticipants = 6;
+  private int maxParticipants;
   private RoomUiConfig uiConfig;
   private ConcurrentHashMap<UUID, RoomParticipant> participants = new ConcurrentHashMap<>();
   private Instant createdAt;

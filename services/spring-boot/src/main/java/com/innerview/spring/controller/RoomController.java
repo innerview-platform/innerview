@@ -1,5 +1,6 @@
 package com.innerview.spring.controller;
 
+import com.innerview.spring.dto.RoomDetails;
 import com.innerview.spring.dto.SfuAccessTokenDto;
 import com.innerview.spring.service.RoomService;
 import com.innerview.spring.service.SfuService;
@@ -28,6 +29,15 @@ public class RoomController {
    */
   @PostMapping("/{roomId}/leave")
   public ResponseEntity<Void> leaveRoom(
+      @PathVariable String roomId, @AuthenticationPrincipal UUID currentUserId) {
+
+    roomService.leaveRoom(roomId, currentUserId);
+
+    return ResponseEntity.ok().build();
+  }
+
+  @GetMapping("/{roomId}/roomDetails")
+  public ResponseEntity<RoomDetails> getRoomDetails(
       @PathVariable String roomId, @AuthenticationPrincipal UUID currentUserId) {
 
     roomService.leaveRoom(roomId, currentUserId);

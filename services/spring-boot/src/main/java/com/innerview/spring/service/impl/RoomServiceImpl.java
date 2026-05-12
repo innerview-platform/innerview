@@ -1,25 +1,33 @@
 package com.innerview.spring.service.impl;
 
 import com.innerview.spring.dto.CodeUpdatePayload;
-import com.innerview.spring.dto.SignalingMessage;
+import com.innerview.spring.dto.RoomDetails;
+import com.innerview.spring.dto.SimplifiedRoomParticipant;
 import com.innerview.spring.entity.*;
 import com.innerview.spring.enums.InterviewRole;
 import com.innerview.spring.enums.InterviewStatus;
 import com.innerview.spring.enums.InterviewType;
 import com.innerview.spring.enums.RoomParticipantStatus;
+import com.innerview.spring.enums.RoomSize;
 import com.innerview.spring.exception.*;
 import com.innerview.spring.repository.InterviewRepository;
+import com.innerview.spring.repository.UserRepository;
 import com.innerview.spring.service.RoomService;
 import com.innerview.spring.service.SharedCodeEditorService;
 import com.innerview.spring.service.WebRtcService;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -32,6 +40,7 @@ public class RoomServiceImpl implements RoomService {
   private final SimpMessagingTemplate messagingTemplate;
   private final InterviewRepository interviewRepository;
   private final WebRtcService webRtcService;
+  private final UserRepository userRepository;
 
   // updates
 
@@ -103,8 +112,7 @@ public class RoomServiceImpl implements RoomService {
       InterviewStatus interviewStatus = interview.getStatus();
       if (interviewStatus == InterviewStatus.CANCELLED
           || interviewStatus == InterviewStatus.COMPLETED
-          || (interviewStatus == InterviewStatus.SCHEDULED
-              && Instant.now().isAfter(interview.getEndTime()))) {
+          || interviewStatus == InterviewStatus.GHOSTED) {
         throw new ExpiredRoomException("Interview Completed or cancelled");
       }
       if (interviewStatus == InterviewStatus.SCHEDULED
@@ -128,6 +136,7 @@ public class RoomServiceImpl implements RoomService {
     if (roomParticipant != null && roomParticipant.getStatus() == RoomParticipantStatus.CONNECTED) {
       return;
     }
+
     // Capacity Check
     if (room.getActiveParticipants() >= room.getMaxParticipants()
         && room.getMaxParticipants() != -1) {
@@ -171,9 +180,9 @@ public class RoomServiceImpl implements RoomService {
       // the user should remove the shared canvas
       // Notify remaining participants so the video grid updates
       Map<String, Object> connectionIssuePayload = new HashMap<>();
-      connectionIssuePayload.put("type", "USER_DISCONNECTED");
       connectionIssuePayload.put("userId", userId.toString());
-      messagingTemplate.convertAndSend("/topic/room/" + roomId, connectionIssuePayload);
+      messagingTemplate.convertAndSend(
+          "/topic/room/" + roomId + "USER_LEFT", connectionIssuePayload);
       room.decrementActiveParticipants();
       if (room.getParticipants().isEmpty()) {
         room.setLastActiveAt(Instant.now()); // Mark for cleanup
@@ -186,19 +195,24 @@ public class RoomServiceImpl implements RoomService {
     RoomParticipant disconnectedClient = sessionDict.get(sessionId);
     if (disconnectedClient == null) return;
     String roomId = disconnectedClient.getRoomId();
+    ActiveRoom room = activeRooms.get(roomId);
     UUID userId = disconnectedClient.getUserId();
+
+    if (room.getUiConfig().isShowSharedEditor()) {
+      sharedCodeEditorService.removeUserFromSession(userId, roomId);
+    }
     // preparing the message
     Map<String, Object> connectionIssuePayload = new HashMap<>();
-    SignalingMessage signalingMessage = new SignalingMessage();
-    signalingMessage.setType("USER_DISCONNECTED");
     connectionIssuePayload.put("userId", userId.toString());
-    messagingTemplate.convertAndSend("/topic/room/" + roomId, connectionIssuePayload);
+    messagingTemplate.convertAndSend(
+        "/topic/room/" + roomId + "USER_DISCONNECTED", connectionIssuePayload);
     activeRooms
         .get(roomId)
         .getParticipants()
         .get(userId)
         .setStatus(RoomParticipantStatus.DISCONNECTED);
     activeRooms.get(roomId).decrementActiveParticipants();
+    activeRooms.get(roomId).setLastActiveAt(Instant.now()); // Mark for cleanup
   }
 
   public boolean hasUserJoinedRoom(String roomId, UUID userId) {
@@ -223,28 +237,26 @@ public class RoomServiceImpl implements RoomService {
     if (room != null && room.getParticipants().containsKey(userId)) {
       // Save STOMP session ID to handle accidental disconnects later
       room.getParticipants().get(userId).setSessionId(stompSessionId);
-      webRtcService.join(room, userId);
+      // join p2p
+      if (room.getMaxParticipants() == 2) {
+        webRtcService.join(room, userId);
+      }
+
+      // join shared code editor
+      if (room.getUiConfig().isShowSharedEditor()) {
+        sharedCodeEditorService.addUserToSession(userId, roomId);
+      }
     }
   }
 
-  @Override
   public void handleJoinFeature(String roomId, UUID userId, String featureName) {
     ActiveRoom room = activeRooms.get(roomId);
     if (room == null) return;
 
     if ("SHARED_EDITOR".equals(featureName)) {
       // 1. Initialize room-wide feature if it's currently off
-      if (!room.getUiConfig().isShowSharedEditor()) {
-        room.getUiConfig().setShowSharedEditor(true);
-        sharedCodeEditorService.init(roomId);
-
-        // Silently notify the room that the editor is available
-        messagingTemplate.convertAndSend(
-            "/topic/room/" + roomId + "/ui-available", "SHARED_EDITOR");
-      }
 
       // 2. Add specific user to the session
-      sharedCodeEditorService.addUserToSession(userId, roomId);
 
       // 3. Send the current code snapshot ONLY to the user who requested it
       CodeUpdatePayload currentCode = sharedCodeEditorService.getCodeSnapshot(roomId);
@@ -270,13 +282,48 @@ public class RoomServiceImpl implements RoomService {
       // Update RAM
       targetParticipant.setRole(newRole);
 
-      // Update Database
-      //            participantRepository.updateRole(room.getInterviewId(), targetUserId, newRole);
-
       // Broadcast role change
       messagingTemplate.convertAndSend(
           "/topic/room/" + roomId + "/roles", Map.of("userId", targetUserId, "newRole", newRole));
     }
+  }
+
+  @Override
+  public RoomDetails getRoomDetails(UUID requesterId, String roomId) {
+    ActiveRoom activeRoom = activeRooms.get(roomId);
+    if (activeRoom == null) throw new ResourceNotFoundException("Room can't be found");
+
+    RoomParticipant roomParticipant = activeRoom.getParticipants().get(requesterId);
+    if (roomParticipant == null) throw new AccessDeniedException("You should join room first");
+
+    Set<UUID> userIds = activeRoom.getParticipants().keySet();
+
+    // 2. Fetch all users from the database in ONE query
+    Map<UUID, String> userNamesMap =
+        userRepository.findAllById(userIds).stream()
+            .collect(Collectors.toMap(User::getId, User::getName));
+
+    List<SimplifiedRoomParticipant> participantDtos =
+        activeRoom.getParticipants().values().stream()
+            .map(
+                p -> {
+                  String name = userNamesMap.getOrDefault(p.getUserId(), "Unknown");
+                  return new SimplifiedRoomParticipant(p.getUserId(), name, p.getRole());
+                })
+            .toList();
+
+    CodeUpdatePayload currentCode = sharedCodeEditorService.getCodeSnapshot(roomId);
+    RoomSize roomSize =
+        (activeRoom.getMaxParticipants() == 2) ? RoomSize.ONE_ON_ONE : RoomSize.MANY;
+
+    // 4. Fill and return the DTO
+    RoomDetails roomDetails = new RoomDetails();
+    roomDetails.setOwnerId(activeRoom.getOwnerId());
+    roomDetails.setCodeSnapshot(currentCode);
+    roomDetails.setRoomSize(roomSize);
+    roomDetails.setParticipants(participantDtos);
+
+    return roomDetails;
   }
 
   // ==========================================
@@ -286,12 +333,25 @@ public class RoomServiceImpl implements RoomService {
   @Scheduled(fixedDelay = 300000) // Runs every 5 minutes
   public void cleanupEmptyRooms() {
     Instant now = Instant.now();
-    // Remove rooms that have been empty for more than 10 minutes
-    activeRooms
-        .entrySet()
-        .removeIf(
-            entry ->
-                entry.getValue().getParticipants().isEmpty()
-                    && entry.getValue().getLastActiveAt().plusSeconds(600).isBefore(now));
+
+    // Create an iterator for the map's entries
+    var iterator = activeRooms.entrySet().iterator();
+
+    while (iterator.hasNext()) {
+      var entry = iterator.next();
+      String roomId = entry.getKey();
+      ActiveRoom room = entry.getValue();
+
+      // 10-minute empty condition
+      if (room.getActiveParticipants() == 0
+          && room.getLastActiveAt().plusSeconds(600).isBefore(now)) {
+        Interview interview =
+            interviewRepository
+                .findByRoomId(roomId)
+                .orElseThrow(() -> new ResourceNotFoundException("Interview not found"));
+        interview.setStatus(InterviewStatus.COMPLETED);
+        interviewRepository.save(interview);
+      }
+    }
   }
 }

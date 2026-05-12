@@ -30,11 +30,11 @@ public class WebRtcP2pImpl implements WebRtcService {
     roleMessage.setType("ROLE");
     roleMessage.setPayload(payload);
     System.out.println(roleMessage);
-    messagingTemplate.convertAndSend("/topic/room/" + roomId, roleMessage);
+    messagingTemplate.convertAndSend("/topic/room/" + roomId + "videocall", roleMessage);
   }
 
   @Override
   public void handleSignal(String roomId, SignalingMessage signalingMessage) {
-    messagingTemplate.convertAndSend("/topic/room/" + roomId, signalingMessage);
+    messagingTemplate.convertAndSend("/topic/room/" + roomId + "/videocall", signalingMessage);
   }
 }
