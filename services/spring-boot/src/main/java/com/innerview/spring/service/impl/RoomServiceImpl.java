@@ -182,7 +182,7 @@ public class RoomServiceImpl implements RoomService {
       Map<String, Object> connectionIssuePayload = new HashMap<>();
       connectionIssuePayload.put("userId", userId.toString());
       messagingTemplate.convertAndSend(
-          "/topic/room/" + roomId + "USER_LEFT", connectionIssuePayload);
+          "/topic/room/" + roomId + "/USER_LEFT", connectionIssuePayload);
       room.decrementActiveParticipants();
       if (room.getParticipants().isEmpty()) {
         room.setLastActiveAt(Instant.now()); // Mark for cleanup
@@ -205,7 +205,7 @@ public class RoomServiceImpl implements RoomService {
     Map<String, Object> connectionIssuePayload = new HashMap<>();
     connectionIssuePayload.put("userId", userId.toString());
     messagingTemplate.convertAndSend(
-        "/topic/room/" + roomId + "USER_DISCONNECTED", connectionIssuePayload);
+        "/topic/room/" + roomId + "/USER_DISCONNECTED", connectionIssuePayload);
     activeRooms
         .get(roomId)
         .getParticipants()
