@@ -5,7 +5,6 @@ import com.innerview.spring.dto.InterviewResponse;
 import com.innerview.spring.dto.InterviewSummaryDto;
 import com.innerview.spring.dto.ScheduledInterviewRequest;
 import com.innerview.spring.service.InterviewService;
-import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -27,14 +26,14 @@ public class InterviewController {
 
   @GetMapping("/user/{userId}/history")
   public ResponseEntity<?> getUserInterviewHistory(@PathVariable UUID userId) {
-    interviewService.getInterviewHistory(userId);
-    return ResponseEntity.ok("User interview history");
+    List<InterviewSummaryDto> history = interviewService.getInterviewHistory(userId);
+    return ResponseEntity.ok(history);
   }
 
   @GetMapping("/user/createdInterviews")
   public ResponseEntity<?> getUserCreatedInterviews(@AuthenticationPrincipal UUID currentUserId) {
     List<InterviewSummaryDto> createdInterviews =
-        interviewService.getInterviewHistory(currentUserId);
+        interviewService.getCreatedInterview(currentUserId);
     return ResponseEntity.ok(createdInterviews);
   }
 

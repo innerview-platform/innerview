@@ -40,7 +40,7 @@ public class RoomController {
   public ResponseEntity<RoomDetails> getRoomDetails(
       @PathVariable String roomId, @AuthenticationPrincipal UUID currentUserId) {
 
-    roomService.leaveRoom(roomId, currentUserId);
+    roomService.getRoomDetails(currentUserId, roomId);
 
     return ResponseEntity.ok().build();
   }
