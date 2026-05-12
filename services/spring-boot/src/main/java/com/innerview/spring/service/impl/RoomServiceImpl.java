@@ -249,23 +249,6 @@ public class RoomServiceImpl implements RoomService {
     }
   }
 
-  public void handleJoinFeature(String roomId, UUID userId, String featureName) {
-    ActiveRoom room = activeRooms.get(roomId);
-    if (room == null) return;
-
-    if ("SHARED_EDITOR".equals(featureName)) {
-      // 1. Initialize room-wide feature if it's currently off
-
-      // 2. Add specific user to the session
-
-      // 3. Send the current code snapshot ONLY to the user who requested it
-      CodeUpdatePayload currentCode = sharedCodeEditorService.getCodeSnapshot(roomId);
-      //      messagingTemplate.convertAndSendToUser(
-      //          userId.toString(), "/queue/editor-snapshot", currentCode);
-      messagingTemplate.convertAndSend("/topic/room/" + roomId + "/code", currentCode);
-    }
-  }
-
   @Override
   public void changeParticipantRole(
       String roomId, UUID requesterId, UUID targetUserId, InterviewRole newRole) {
