@@ -162,6 +162,12 @@ public class RoomServiceImpl implements RoomService {
     }
     room.incrementActiveParticipants();
     room.setLastActiveAt(Instant.now());
+    // broadcast that a new user joined
+    Map<String, Object> payload = new HashMap<>();
+    String name = userRepository.findUserById(userId).get().getName();
+    payload.put("userId", userId.toString());
+    payload.put("name", name);
+    messagingTemplate.convertAndSend("/topic/room/" + roomId + "/join", payload);
   }
 
   @Override
