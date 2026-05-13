@@ -55,7 +55,7 @@ server:
 jwt:
   secret: ${JWT_SECRET}
   access-token:
-    expiration: 900000
+    expiration: 900000000
   refresh-token:
     expiration: 604800000
 frontend:

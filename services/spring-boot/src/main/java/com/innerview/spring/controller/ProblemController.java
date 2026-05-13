@@ -124,9 +124,9 @@ public class ProblemController {
             @PathVariable UUID id,
             @AuthenticationPrincipal UUID currentUserId,
             @Valid @RequestBody TestCaseDto request) { // FIXED: Added @Valid
+        System.out.println("pedri");
 
         List<TestCaseDto> updatedTestCases = problemService.createProblemTestCase(request,id, currentUserId);
-
         URI location = ServletUriComponentsBuilder
                 .fromCurrentRequest()
                 .build()

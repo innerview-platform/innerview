@@ -1,10 +1,10 @@
-package com.innerview.spring.dto;
+	package com.innerview.spring.dto;
 
-import com.innerview.spring.enums.InterviewStatus;
-import lombok.Data;
+	import com.innerview.spring.enums.InterviewStatus;
+	import lombok.Data;
 
-@Data
-public class InterviewResponse {
-	String roomId;
-	String roomLink;
-}
+	@Data
+	public class InterviewResponse {
+		String roomId;
+		String roomLink;
+	}
