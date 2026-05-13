@@ -64,7 +64,9 @@ aws:
   secret-key: "testing"
   dynamodb:
     endpoint: ${DYNAMODB_ENDPOINT:http://localhost:8000}
-
+notification:
+  dynamo:
+    inapp-table: interview-in-app-notifications
 # Server configuration
 server:
   port: 8080

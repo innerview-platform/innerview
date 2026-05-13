@@ -44,3 +44,12 @@ frontend:
   url: "http://localhost:3000"
 interview:
   duration: 150
+aws:
+  region: ${DYNAMODB_REGION:us-east-1}
+  access-key: "testing"
+  secret-key: "testing"
+  dynamodb:
+    endpoint: ${DYNAMODB_ENDPOINT:http://localhost:8000}
+notification:
+  dynamo:
+    inapp-table: interview-in-app-notifications

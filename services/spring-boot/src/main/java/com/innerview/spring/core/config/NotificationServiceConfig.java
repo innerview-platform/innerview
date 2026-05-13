@@ -1,11 +1,13 @@
 package com.innerview.spring.core.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.innerview.spring.entity.ScheduleNotification;
+import com.innerview.spring.repository.InAppNotificationRepository;
 import com.innerview.spring.repository.OutboxRepository;
 import com.innerview.spring.service.GoogleApiService;
-import com.innerview.spring.service.NotificationPublisherService;
-import com.innerview.spring.service.impl.NotificationService;
 import com.innerview.spring.service.notification.EmailNotificationWorker;
+import com.innerview.spring.service.notification.InAppNotificationWorker;
+import com.innerview.spring.service.notification.SseEmitterRegistry;
 import java.net.URI;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -68,8 +70,26 @@ public class NotificationServiceConfig {
    * dropping messages during deployments.
    */
   @Bean(destroyMethod = "shutdown")
-  public ThreadPoolExecutor inAppExecutor(LinkedBlockingQueue<ScheduleNotification> inAppQueue) {
-    return buildWarmPool("InApp");
+  public ThreadPoolExecutor inAppExecutor(
+      LinkedBlockingQueue<ScheduleNotification> inAppQueue,
+      OutboxRepository outboxRepository,
+      InAppNotificationRepository inAppNotificationRepository,
+      SseEmitterRegistry sseEmitterRegistry,
+      ObjectMapper objectMapper) {
+
+    ThreadPoolExecutor executor = buildWarmPool("InApp");
+
+    for (int i = 0; i < POOL_SIZE; i++) {
+      executor.submit(
+          new InAppNotificationWorker(
+              outboxRepository,
+              inAppNotificationRepository,
+              sseEmitterRegistry,
+              objectMapper,
+              inAppQueue));
+    }
+
+    return executor;
   }
 
   /**
@@ -93,7 +113,6 @@ public class NotificationServiceConfig {
 
     return executor;
   }
-
 
   // ── Infrastructure beans ──────────────────────────────────────────────────
 
