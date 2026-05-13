@@ -44,3 +44,6 @@ frontend:
   url: "http://localhost:3000"
 interview:
   duration: 150
+aws:
+  dynamodb:
+    endpoint: http://localhost:8000
