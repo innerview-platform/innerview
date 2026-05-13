@@ -1,16 +1,20 @@
 package com.innerview.spring.entity;
 
 import com.innerview.spring.enums.Channel;
+import lombok.Builder;
 import lombok.Data;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 
 @Data
-public  class scheduleNotification {
-    String eventId;
+@Builder
+public  class ScheduleNotification {
+
+    @Builder.Default
+    private String eventId = UUID.randomUUID().toString();
     Channel channel;
     Long interviewId;
     String recipientEmail;
@@ -18,5 +22,7 @@ public  class scheduleNotification {
     Map<String, Object> payload;
     String OwnerUsername;
     String OwnerAccount;
+    Instant endTime;
+    Integer durationMinutes;
     Instant date;
 }
