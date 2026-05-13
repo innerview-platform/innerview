@@ -1,6 +1,7 @@
 package com.innerview.spring.service;
 
 import com.innerview.spring.dto.*;
+import com.innerview.spring.entity.UserProfile;
 import com.innerview.spring.enums.InterviewStatus;
 import com.innerview.spring.enums.InterviewType;
 import org.springframework.data.domain.Page;
@@ -24,4 +25,5 @@ public interface UserProfileService {
             int limit);
     Page<FeedbackDto> getUserGivenFeedback(UUID userId, int page, int limit);
     Page<FeedbackDto> getUserReceivedFeedback(UUID userId, Integer rating, int page, int limit);
+    UserProfile getUserProfile(UUID currentUserID );
 }

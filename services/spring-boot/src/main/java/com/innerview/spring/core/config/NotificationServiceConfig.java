@@ -1,20 +1,27 @@
 package com.innerview.spring.core.config;
 
-import com.innerview.spring.entity.InterviewEvent;
+import com.innerview.spring.entity.ScheduleNotification;
 import com.innerview.spring.repository.OutboxRepository;
+import com.innerview.spring.service.GoogleApiService;
 import com.innerview.spring.service.NotificationPublisherService;
 import com.innerview.spring.service.impl.NotificationService;
+import com.innerview.spring.service.notification.EmailNotificationWorker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.jmx.export.notification.NotificationPublisher;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import org.springframework.beans.factory.annotation.Value;
 import software.amazon.awssdk.services.ses.SesClient;
 
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -54,7 +61,7 @@ public class NotificationServiceConfig {
      * Dedicated queue for in-app (SSE) notifications.
      */
     @Bean
-    public LinkedBlockingQueue<InterviewEvent> inAppQueue() {
+    public LinkedBlockingQueue<ScheduleNotification> inAppQueue() {
         return new LinkedBlockingQueue<>(QUEUE_CAPACITY);
     }
 
@@ -62,7 +69,7 @@ public class NotificationServiceConfig {
      * Dedicated queue for email notifications.
      */
     @Bean
-    public LinkedBlockingQueue<InterviewEvent> emailQueue() {
+    public LinkedBlockingQueue<ScheduleNotification> emailQueue() {
         return new LinkedBlockingQueue<>(QUEUE_CAPACITY);
     }
 
@@ -73,28 +80,33 @@ public class NotificationServiceConfig {
      * Uses graceful shutdown to prevent dropping messages during deployments.
      */
     @Bean(destroyMethod = "shutdown")
-    public ThreadPoolExecutor inAppExecutor(LinkedBlockingQueue<InterviewEvent> inAppQueue) {
-        return buildWarmPool(inAppQueue, "InApp");
+    public ThreadPoolExecutor inAppExecutor(LinkedBlockingQueue<ScheduleNotification> inAppQueue) {
+        return buildWarmPool("InApp");
     }
 
     /**
      * Permanently warm thread pool for email delivery.
      * Uses graceful shutdown to prevent dropping emails mid-flight during deployments.
      */
-    @Bean(destroyMethod = "shutdown")
+    @Bean
     public ThreadPoolExecutor emailExecutor(
-            LinkedBlockingQueue<InterviewEvent> emailQueue,
             OutboxRepository outboxRepository,
-            SesClient sesClient) {
+            JavaMailSender mailSender,
+            GoogleApiService googleApiService,
+            LinkedBlockingQueue<ScheduleNotification> emailQueue) {
 
-        ThreadPoolExecutor executor = buildWarmPool(emailQueue, "Email");
+        ThreadPoolExecutor executor = buildWarmPool("Email");
 
-        // Submit one EmailNotificationWorker per thread.
-//        for (int i = 0; i < POOL_SIZE; i++) {
-//          //  executor.submit(new EmailNotificationWorker(emailQueue, outboxRepository, sesClient));
-//        }
+        for (int i = 0; i < POOL_SIZE; i++) {
+            // 2. Pass googleApiService as the second argument
+            executor.submit(new EmailNotificationWorker(
+                    outboxRepository,
+                    googleApiService,
+                    mailSender,
+                    emailQueue
+            ));
+        }
 
-        log.info("emailExecutor started with {} permanently warm threads", POOL_SIZE);
         return executor;
     }
 
@@ -102,8 +114,8 @@ public class NotificationServiceConfig {
 
     @Bean
     public NotificationPublisherService notificationPublisher(
-            LinkedBlockingQueue<InterviewEvent> inAppQueue,
-            LinkedBlockingQueue<InterviewEvent> emailQueue) {
+            LinkedBlockingQueue<ScheduleNotification> inAppQueue,
+            LinkedBlockingQueue<ScheduleNotification> emailQueue) {
         return new NotificationService(inAppQueue, emailQueue);
     }
 
@@ -114,32 +126,28 @@ public class NotificationServiceConfig {
         return new OutboxRepository(dynamoDbClient);
     }
 
+    @Value("${aws.dynamodb.endpoint}")
+    private String dynamoEndpoint;
+
     @Bean
     public DynamoDbClient dynamoDbClient() {
-        return DynamoDbClient.builder().build();
-    }
-
-    /**
-     * SES client with explicit timeouts.
-     * apiCallTimeout = 10s       — total budget including retries
-     * apiCallAttemptTimeout = 5s — per-attempt budget
-     */
-    @Bean
-    public SesClient sesClient() {
-        return SesClient.builder()
-                .overrideConfiguration(ClientOverrideConfiguration.builder()
-                        .apiCallTimeout(Duration.ofSeconds(10))
-                        .apiCallAttemptTimeout(Duration.ofSeconds(5))
-                        .build())
+        log.info(">>> DynamoDB endpoint value: '{}'", dynamoEndpoint);
+        return DynamoDbClient.builder()
+                .endpointOverride(URI.create(dynamoEndpoint))
+                .region(Region.US_EAST_1)
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create("dummy", "dummy")))
                 .build();
     }
+
+
 
     // ── Factory ───────────────────────────────────────────────────────────────
 
     /**
      * Creates a permanently warm, fixed-size thread pool.
      */
-    private ThreadPoolExecutor buildWarmPool(LinkedBlockingQueue<InterviewEvent> queue, String namePrefix) {
+    private ThreadPoolExecutor buildWarmPool( String namePrefix) {
             ThreadPoolExecutor executor = new ThreadPoolExecutor(
                     POOL_SIZE,                     // corePoolSize
                     POOL_SIZE,                     // maxPoolSize

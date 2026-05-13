@@ -34,7 +34,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final FeedbackRepository feedbackRepository;
 
 
-    private UserProfile getUserProfile(UUID currentUserID ){
+    public UserProfile getUserProfile(UUID currentUserID ){
         Optional<UserProfile> userProfile=userProfileRepository.getUserProfileByUser_Id(currentUserID);
         if(userProfile.isEmpty()){
             throw  new UserProfileNotFound("User profile not found");

@@ -1,9 +1,10 @@
 package com.innerview.spring.service.impl;
 
-import com.innerview.spring.entity.InterviewEvent;
+import com.innerview.spring.entity.ScheduleNotification;
 import com.innerview.spring.service.NotificationPublisherService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.LinkedBlockingQueue;
@@ -14,16 +15,15 @@ import java.util.concurrent.LinkedBlockingQueue;
  * it is non blocking drop the message in the queue based on the type of it
  * if there is no size in queues we drop message in dynamodb
  *  */
-@Service
 public class NotificationService implements NotificationPublisherService {
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
-    private final LinkedBlockingQueue<InterviewEvent> inAppQueue;
-    private final LinkedBlockingQueue<InterviewEvent> emailQueue;
+    private final LinkedBlockingQueue<ScheduleNotification> inAppQueue;
+    private final LinkedBlockingQueue<ScheduleNotification> emailQueue;
 
     public NotificationService(
-            LinkedBlockingQueue<InterviewEvent> inAppQueue,
-            LinkedBlockingQueue<InterviewEvent> emailQueue) {
+            LinkedBlockingQueue<ScheduleNotification> inAppQueue,
+            LinkedBlockingQueue<ScheduleNotification> emailQueue) {
         this.inAppQueue = inAppQueue;
         this.emailQueue = emailQueue;
     }
@@ -35,7 +35,7 @@ public class NotificationService implements NotificationPublisherService {
      * knowing the DynamoDB Poller will safely pick it up later.
      */
     @Override
-    public void publishEvent(InterviewEvent event) {
+    public void publishEvent(ScheduleNotification event) {
         if (event == null) {
             log.warn("publishEvent() called with null event — ignoring");
             return;

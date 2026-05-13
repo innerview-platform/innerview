@@ -6,6 +6,7 @@ import com.innerview.spring.dto.InterviewResponse;
 import com.innerview.spring.dto.InterviewSummaryDto;
 import com.innerview.spring.dto.ScheduledInterviewRequest;
 import com.innerview.spring.entity.Interview;
+import com.innerview.spring.enums.Channel;
 import com.innerview.spring.enums.InterviewStatus;
 import com.innerview.spring.mapper.InterviewMapper;
 import com.innerview.spring.repository.InterviewRepository;
@@ -13,10 +14,15 @@ import com.innerview.spring.service.InterviewService;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
+import com.innerview.spring.entity.ScheduleNotification;
+
+import com.innerview.spring.service.NotificationPublisherService;
+import com.innerview.spring.service.UserProfileService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +31,8 @@ import org.springframework.stereotype.Service;
 public class InterviewServiceImpl implements InterviewService {
     private final InterviewRepository interviewRepository;
     private final InterviewMapper interviewMapper;
+    private final UserProfileService userProfileService;
+    private final NotificationPublisherService notificationPublisherService;
 
     @Value("${frontend.url}")
     private String frontendUrl;
@@ -55,6 +63,8 @@ public class InterviewServiceImpl implements InterviewService {
         interview.setDurationMinutes(interviewDuration);
 
         Interview savedInterview = interviewRepository.save(interview);
+
+        sendScheduleNotification(savedInterview,userId);
 
         InterviewResponse response = new InterviewResponse();
         response.setRoomId(savedInterview.getRoomId());
@@ -95,6 +105,34 @@ public class InterviewServiceImpl implements InterviewService {
         // Assuming frontendUrl is a class-level variable like @Value("${frontend.url}")
         response.setRoomLink(frontendUrl + "/room/join/" + savedInterview.getRoomId());
 
+
+        // sending notification
+
+       sendScheduleNotification(savedInterview,userId);
+
+
+
+
         return response;
+    }
+
+
+    private void sendScheduleNotification(Interview interview,UUID userID){
+        // sending notification
+        var ownerProfile = userProfileService.getUserProfile(interview.getOwnerId());
+        var userEmail = userProfileService.getUserProfile(userID).getUser().getEmail();
+        var scheduleNotification=ScheduleNotification.builder().interviewId(interview.getId())
+                .date(interview.getStartTime())
+                .channel(Channel.EMAIL)
+                .recipientEmail(userEmail)
+                .OwnerAccount(ownerProfile.getUser().getEmail())
+                .OwnerUsername(ownerProfile.getUser().getName())
+                .endTime(interview.getEndTime())
+                .durationMinutes(interview.getDurationMinutes())
+                .payload(Map.of("schedulling", "the meeting scheduleed"))
+                .build();
+
+        //send it nonblocking
+        notificationPublisherService.publishEvent(scheduleNotification);
     }
 }
