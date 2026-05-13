@@ -8,6 +8,7 @@ import com.innerview.spring.service.SubmissionJudgingAsyncService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -18,6 +19,7 @@ public class SubmissionJudgingAsyncServiceImpl implements SubmissionJudgingAsync
 
     @Override
     @Async("submissionJudgeExecutor")
+    @Transactional
     public void judgeSubmission(Submission submission) {
         try {
             judgeService.judge(submission);

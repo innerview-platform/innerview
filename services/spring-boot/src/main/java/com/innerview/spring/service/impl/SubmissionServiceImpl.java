@@ -85,8 +85,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                     submission.getStatus(),
                     null,
                     null,
-                    List.of()
-            );
+                    List.of());
         }
 
         return toResultDto(submission);
@@ -97,7 +96,8 @@ public class SubmissionServiceImpl implements SubmissionService {
         Problem problem = loadActiveProblem(problemId);
         validateLanguage(request.getLanguage());
 
-        List<TestCase> sampleTestCases = testCaseRepository.findAllByProblemIdAndIsSampleTrueOrderByOrderIndexAsc(problemId);
+        List<TestCase> sampleTestCases = testCaseRepository
+                .findAllByProblemIdAndIsSampleTrueOrderByOrderIndexAsc(problemId);
         List<SubmissionTestCaseResultDTO> results = new ArrayList<>();
         boolean compileErrorEncountered = false;
         int passedWeight = 0;
@@ -107,7 +107,8 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         for (TestCase testCase : sampleTestCases) {
             if (compileErrorEncountered) {
-                results.add(new SubmissionTestCaseResultDTO(testCase.getOrderIndex(), SubmissionStatus.SKIPPED, 0L));
+                results.add(
+                        new SubmissionTestCaseResultDTO(testCase.getOrderIndex(), SubmissionStatus.SKIPPED, 0L));
                 verdicts.add(SubmissionStatus.SKIPPED);
                 continue;
             }
@@ -117,17 +118,17 @@ public class SubmissionServiceImpl implements SubmissionService {
                     request.getLanguage(),
                     testCase.getInput(),
                     problem.getTimeLimitMs(),
-                    problem.getMemoryLimitMb()
-            );
+                    problem.getMemoryLimitMb());
 
             SubmissionStatus verdict = resolveVerdict(testCase, executionResult);
             results.add(new SubmissionTestCaseResultDTO(
                     testCase.getOrderIndex(),
                     verdict,
-                    executionResult == null || executionResult.getDurationMs() == null ? 0L : executionResult.getDurationMs()
-            ));
+                    executionResult == null || executionResult.getDurationMs() == null ? 0L
+                            : executionResult.getDurationMs()));
             verdicts.add(verdict);
-            totalDurationMs += executionResult == null || executionResult.getDurationMs() == null ? 0L : executionResult.getDurationMs();
+            totalDurationMs += executionResult == null || executionResult.getDurationMs() == null ? 0L
+                    : executionResult.getDurationMs();
 
             if (verdict == SubmissionStatus.ACCEPTED) {
                 passedWeight += testCase.getWeight();
@@ -149,8 +150,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                 finalStatus,
                 score,
                 totalDurationMs,
-                results
-        );
+                results);
     }
 
     private Interview loadAccessibleInterview(Long interviewId, UUID currentUserId) {
@@ -202,18 +202,17 @@ public class SubmissionServiceImpl implements SubmissionService {
 
         throw new UnsupportedSubmissionLanguageException(
                 "Unsupported language: " + language,
-                supportedLanguages
-        );
+                supportedLanguages);
     }
 
     private SubmissionResultDTO toResultDto(Submission submission) {
         List<SubmissionTestCaseResultDTO> testResults = submission.getTestResults().stream()
-                .sorted(Comparator.comparing(result -> result.getOrderIndex() == null ? Integer.MAX_VALUE : result.getOrderIndex()))
+                .sorted(Comparator.comparing(
+                        result -> result.getOrderIndex() == null ? Integer.MAX_VALUE : result.getOrderIndex()))
                 .map(result -> new SubmissionTestCaseResultDTO(
                         result.getOrderIndex(),
                         result.getStatus(),
-                        result.getDurationMs()
-                ))
+                        result.getDurationMs()))
                 .toList();
 
         return new SubmissionResultDTO(
@@ -223,8 +222,7 @@ public class SubmissionServiceImpl implements SubmissionService {
                 submission.getStatus(),
                 submission.getScore(),
                 submission.getTotalDurationMs(),
-                testResults
-        );
+                testResults);
     }
 
     private SubmissionStatus resolveVerdict(TestCase testCase, ExecutionResult executionResult) {
@@ -251,7 +249,8 @@ public class SubmissionServiceImpl implements SubmissionService {
         if (verdicts.isEmpty()) {
             return SubmissionStatus.ACCEPTED;
         }
-        if (verdicts.stream().allMatch(status -> status == SubmissionStatus.ACCEPTED || status == SubmissionStatus.SKIPPED)) {
+        if (verdicts.stream()
+                .allMatch(status -> status == SubmissionStatus.ACCEPTED || status == SubmissionStatus.SKIPPED)) {
             return SubmissionStatus.ACCEPTED;
         }
 

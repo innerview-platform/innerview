@@ -4,6 +4,7 @@ import com.innerview.spring.entity.Problem;
 import com.innerview.spring.enums.Difficulty;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,6 +29,7 @@ public interface ProblemRepository extends JpaRepository<Problem, UUID> {
           AND (:difficulty IS NULL OR p.difficulty = :difficulty)
           AND (:creatorId IS NULL OR p.createdBy.id = :creatorId)
         """)
+    @EntityGraph(attributePaths = {"solutionLanguage"})
     Page<Problem> searchAllProblems(
             @Param("titleQuery") String titleQuery,
             @Param("tag") String tag,
