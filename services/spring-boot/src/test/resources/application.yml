@@ -45,5 +45,11 @@ frontend:
 interview:
   duration: 150
 aws:
+  region: ${DYNAMODB_REGION:us-east-1}
+  access-key: "testing"
+  secret-key: "testing"
   dynamodb:
-    endpoint: http://localhost:8000
+    endpoint: ${DYNAMODB_ENDPOINT:http://localhost:8000}
+notification:
+  dynamo:
+    inapp-table: interview-in-app-notifications
