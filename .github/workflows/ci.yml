@@ -6,6 +6,7 @@ on:
     branches:
       - main
       - development
+      - milestone_*
 
 concurrency:
   group: ci-${{ github.head_ref || github.ref }}

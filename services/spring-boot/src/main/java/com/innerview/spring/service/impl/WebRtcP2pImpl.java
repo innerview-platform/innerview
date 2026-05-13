@@ -18,6 +18,7 @@ public class WebRtcP2pImpl implements WebRtcService {
 
   @Override
   public void join(ActiveRoom activeRoom, UUID userId) {
+    if (activeRoom.getMaxParticipants() == -1) return;
     String roomId = activeRoom.getRoomId();
     int numberOfPartcipants = activeRoom.getActiveParticipants();
     String assignedRole = (numberOfPartcipants == 1) ? "impolite" : "polite";
@@ -29,11 +30,11 @@ public class WebRtcP2pImpl implements WebRtcService {
     roleMessage.setType("ROLE");
     roleMessage.setPayload(payload);
     System.out.println(roleMessage);
-    messagingTemplate.convertAndSend("/topic/room/" + roomId, roleMessage);
+    messagingTemplate.convertAndSend("/topic/room/" + roomId + "/videocall", roleMessage);
   }
 
   @Override
   public void handleSignal(String roomId, SignalingMessage signalingMessage) {
-    messagingTemplate.convertAndSend("/topic/room/" + roomId, signalingMessage);
+    messagingTemplate.convertAndSend("/topic/room/" + roomId + "/videocall", signalingMessage);
   }
 }

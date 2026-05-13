@@ -87,3 +87,10 @@ frontend:
 
 interview:
   duration: 150
+submission:
+  judging:
+    executor:
+      pool-size: 5
+judge:
+  execution:
+    url: http://127.0.0.1:2000/api/v2/execute

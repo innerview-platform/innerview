@@ -1,8 +1,10 @@
 package com.innerview.spring.enums;
 
 public enum InterviewStatus {
-     SCHEDULED
-    , STARTED
-    , COMPLETED
-    , CANCELLED
+  SCHEDULED,
+  STARTED,
+  ACTIVE,
+  COMPLETED,
+  CANCELLED,
+  GHOSTED
 }
