@@ -1,5 +1,6 @@
 package com.innerview.spring.service;
 
+import com.innerview.spring.dto.RoomDetails;
 import com.innerview.spring.enums.InterviewRole;
 import com.innerview.spring.enums.InterviewType;
 import java.util.UUID;
@@ -18,8 +19,6 @@ public interface RoomService {
 
   void handleUserConnectedToSocket(String roomId, UUID userId, String stompSessionId);
 
-  void handleJoinFeature(String roomId, UUID userId, String featureName);
-
   void mapSessionIdToUser(String sessionId, String roomId, UUID userId);
 
   void changeParticipantRole(
@@ -28,4 +27,6 @@ public interface RoomService {
   boolean hasUserJoinedRoom(String roomId, UUID userId);
 
   boolean isRoomExists(String roomId);
+
+  RoomDetails getRoomDetails(UUID requesterId, String roomId);
 }

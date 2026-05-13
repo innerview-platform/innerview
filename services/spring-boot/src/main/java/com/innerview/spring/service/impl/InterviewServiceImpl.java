@@ -17,9 +17,14 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.rest.webmvc.ResourceNotFoundException;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -28,6 +33,8 @@ public class InterviewServiceImpl implements InterviewService {
   private final InterviewRepository interviewRepository;
   private final InterviewMapper interviewMapper;
   private final ProblemRepository problemRepository;
+  private final SimpMessagingTemplate messagingTemplate;
+  private final RedisTemplate redisTemplate;
 
   @Value("${frontend.url}")
   private String frontendUrl;
@@ -56,6 +63,15 @@ public class InterviewServiceImpl implements InterviewService {
     // Set status to active/in-progress for instant interviews
     interview.setStatus(InterviewStatus.STARTED);
     interview.setDurationMinutes(interviewDuration);
+
+    interview.setEndTime(Instant.now().plus(interviewDuration, ChronoUnit.MINUTES));
+    redisTemplate
+        .opsForValue()
+        .set(
+            "interview:" + interview.getId(),
+            "active",
+            interview.getDurationMinutes(),
+            TimeUnit.MINUTES);
     interview.setProblems(resolveProblems(request.getProblemIds()));
     Integer roomSize = (request.getRoomSize() == RoomSize.ONE_ON_ONE) ? 2 : -1;
     interview.setRoomSize(roomSize);
@@ -91,7 +107,13 @@ public class InterviewServiceImpl implements InterviewService {
 
     // Automatically calculate the end time based on duration
     interview.setEndTime(startTime.plus(interviewDuration, ChronoUnit.MINUTES));
-
+    redisTemplate
+        .opsForValue()
+        .set(
+            "interview:" + interview.getId(),
+            "active",
+            interview.getDurationMinutes(),
+            TimeUnit.MINUTES);
     Integer roomSize = (request.getRoomSize() == RoomSize.ONE_ON_ONE) ? 2 : -1;
     interview.setRoomSize(roomSize);
     // 4. Save to Database
@@ -111,5 +133,80 @@ public class InterviewServiceImpl implements InterviewService {
       return List.of();
     }
     return problemRepository.findAllById(problemIds).stream().filter(Problem::isActive).toList();
+  }
+
+  @Override
+  public List<InterviewSummaryDto> getCreatedInterview(UUID userId) {
+    return interviewRepository.findByOwnerIdOrderByCreatedAtDesc(userId).stream()
+        .map(interviewMapper::toSummaryDto)
+        .collect(Collectors.toList());
+  }
+
+  @Override
+  public void cancelInterview(Long interviewId, UUID currentUserId) {
+    Interview interview =
+        interviewRepository
+            .findById(interviewId)
+            .orElseThrow(() -> new ResourceNotFoundException("Interview not found"));
+
+    if (!interview.getOwnerId().equals(currentUserId)) {
+      throw new AccessDeniedException("Only the owner can cancel this interview");
+    }
+    InterviewStatus interviewStatus = interview.getStatus();
+    if (interviewStatus == InterviewStatus.COMPLETED
+        || interviewStatus == InterviewStatus.CANCELLED
+        || interviewStatus == InterviewStatus.STARTED) {
+      throw new IllegalStateException("You can only cancel scheduled interview");
+    }
+
+    interview.setStatus(InterviewStatus.CANCELLED);
+    interviewRepository.save(interview);
+  }
+
+  @Override
+  public void completeInterview(Long interviewId, UUID currentUserId) {
+    Interview interview =
+        interviewRepository
+            .findById(interviewId)
+            .orElseThrow(() -> new ResourceNotFoundException("Interview not found"));
+
+    if (!interview.getOwnerId().equals(currentUserId)) {
+      throw new AccessDeniedException("Only the owner can complete this interview");
+    }
+
+    if (interview.getStatus() != InterviewStatus.STARTED) {
+      throw new IllegalStateException("Only an in-progress interview can be completed");
+    }
+
+    messagingTemplate.convertAndSend(
+        "/topic/room/" + interview.getRoomId() + "/close", "Host Ended The Interview");
+    interview.setStatus(InterviewStatus.COMPLETED);
+    interviewRepository.save(interview);
+  }
+
+  @Override
+  public void executeEndInterviewTime(Long interviewId) {
+
+    Interview interview =
+        interviewRepository
+            .findById(interviewId)
+            .orElseThrow(() -> new ResourceNotFoundException("Interview not found"));
+
+    if (interview.getStatus() == InterviewStatus.CANCELLED
+        || interview.getStatus() == InterviewStatus.GHOSTED
+        || interview.getStatus() == InterviewStatus.COMPLETED) {
+      throw new IllegalStateException("Only an in-progress or scheduled interview can be Finished");
+    }
+    if (interview.getStatus() == InterviewStatus.STARTED) {
+      messagingTemplate.convertAndSend(
+          "/topic/room/" + interview.getRoomId() + "/close", "Interview Time has Ended");
+      interview.setStatus(InterviewStatus.COMPLETED);
+    }
+    if (interview.getStatus() == InterviewStatus.SCHEDULED) {
+
+      interview.setStatus(InterviewStatus.GHOSTED);
+    }
+
+    interviewRepository.save(interview);
   }
 }
