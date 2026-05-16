@@ -6,9 +6,9 @@ import com.innerview.spring.dto.InterviewResponse;
 import com.innerview.spring.dto.InterviewSummaryDto;
 import com.innerview.spring.dto.ScheduledInterviewRequest;
 import com.innerview.spring.entity.Interview;
+import com.innerview.spring.entity.Problem;
 import com.innerview.spring.entity.ScheduleNotification;
 import com.innerview.spring.enums.Channel;
-import com.innerview.spring.entity.Problem;
 import com.innerview.spring.enums.InterviewStatus;
 import com.innerview.spring.enums.RoomSize;
 import com.innerview.spring.mapper.InterviewMapper;
@@ -173,10 +173,6 @@ public class InterviewServiceImpl implements InterviewService {
     // send it nonblocking
     notificationPublisherService.publishEvent(scheduleNotificationEmail);
     notificationPublisherService.publishEvent(scheduleNotificationInApp);
-  }
-}
-
-    return response;
   }
 
   private List<Problem> resolveProblems(List<UUID> problemIds) {
